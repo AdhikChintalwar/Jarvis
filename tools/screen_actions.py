@@ -60,3 +60,31 @@ If there is an error, explain the likely cause and what the user should do next.
     )
 
     return response["message"]["content"]
+
+
+def analyze_screen_vision() -> str:
+    import ollama
+
+    screenshot_path = take_screenshot()
+
+    prompt = """
+You are Jarvis, a helpful Mac desktop assistant.
+
+Analyze this screenshot carefully.
+Explain what is visible on the screen in simple words.
+If there is an error message, explain the likely cause and what the user should do next.
+Be concise and practical.
+"""
+
+    response = ollama.chat(
+        model="llava",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+                "images": [screenshot_path]
+            }
+        ]
+    )
+
+    return response["message"]["content"]

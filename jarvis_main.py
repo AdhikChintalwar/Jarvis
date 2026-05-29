@@ -9,6 +9,7 @@ from core.memory_store import save_memory, get_last_command
 from core.offline_listener import listen_offline
 from core.ollama_brain import understand_command
 from mcp_layer.mcp_client import call_mcp_tool
+from core.planner import create_plan
 
 WAKE_THRESHOLD = 0.65
 COOLDOWN_SECONDS = 2
@@ -54,6 +55,107 @@ def handle_command(text: str):
 
     action = parsed.get("action")
     target = parsed.get("target")
+
+    if action == "planner":
+        speak("Creating a plan")
+        plan_data = create_plan(target)
+
+        print("Plan:", plan_data)
+
+        steps = plan_data.get("plan", [])
+
+        if not steps:
+            speak("I could not create a plan")
+            return
+
+        speak(f"I found {len(steps)} step plan")
+
+        for step in steps:
+            tool = step.get("tool")
+            step_target = step.get("target")
+
+            print(f"Executing step: {tool} -> {step_target}")
+
+            if tool == "search_google":
+                speak(f"Searching Google for {step_target}")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_search_google", {"query": step_target})
+                )
+                print(result)
+
+            elif tool == "search_youtube":
+                speak(f"Searching YouTube for {step_target}")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_search_youtube", {"query": step_target})
+                )
+                print(result)
+
+            elif tool == "open_website":
+                speak(f"Opening {step_target}")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_open_website", {"site_or_url": step_target})
+                )
+                print(result)
+
+            elif tool == "open_app":
+                speak(f"Opening {step_target}")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_open_app", {"app_name": step_target})
+                )
+                print(result)
+
+            elif tool == "take_screenshot":
+                speak("Taking screenshot")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_take_screenshot", {})
+                )
+                print(result)
+
+            elif tool == "analyze_screen_vision":
+                speak("Analyzing screen")
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_analyze_screen_vision", {})
+                )
+                print(result)
+
+            elif tool == "battery_status":
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_battery_status", {})
+                )
+                text = result.content[0].text
+                speak(text)
+                print(text)
+
+            elif tool == "current_time":
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_current_time", {})
+                )
+                text = result.content[0].text
+                speak(text)
+                print(text)
+
+            elif tool == "disk_space":
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_disk_space", {})
+                )
+                text = result.content[0].text
+                speak(text)
+                print(text)
+
+            elif tool == "cpu_usage":
+                result = asyncio.run(
+                    call_mcp_tool("jarvis_cpu_usage", {})
+                )
+                text = result.content[0].text
+                speak(text)
+                print(text)
+
+            else:
+                print(f"Unknown planner tool skipped: {tool}")
+
+        speak("Plan completed")
+        return
+    
 
     if action == "repeat_last":
         last = get_last_command()
@@ -175,6 +277,17 @@ def handle_command(text: str):
         text = result.content[0].text
         print(text)
         speak(text[:250])
+
+    elif action == "analyze_screen_vision":
+        speak("Looking at your screen")
+        result = asyncio.run(
+            call_mcp_tool("jarvis_analyze_screen_vision", {})
+        )
+
+        text = result.content[0].text
+        print(text)
+        speak(text[:250])
+
 
     else:
         print("Unknown command ignored.")

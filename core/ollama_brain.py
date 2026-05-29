@@ -28,6 +28,8 @@ Allowed actions:
 - take_screenshot
 - take_and_open_screenshot
 - analyze_screen
+- analyze_screen_vision
+- planner
 
 Examples:
 
@@ -38,6 +40,8 @@ Only use open_website when the user says open YouTube, open Google, open Gmail, 
 If the user says "open YouTube and search for X", return search_youtube with target X.
 If the user says "open Google and search for X", return search_google with target X.
 Never return a separate query field. Only return action and target.
+
+If the user asks to find, research, plan, investigate, compare, or do a multi-step task, return planner.
 
 User: Jarvis open YouTube
 {{"action": "open_website", "target": "youtube"}}
@@ -104,6 +108,24 @@ User: Jarvis read this error
 
 User: Jarvis analyze my screen
 {{"action": "analyze_screen", "target": "screen"}}
+
+User: Jarvis look at my screen
+{{"action": "analyze_screen_vision", "target": "screen"}}
+
+User: Jarvis visually analyze my screen
+{{"action": "analyze_screen_vision", "target": "screen"}}
+
+User: Jarvis what do you see on my screen
+{{"action": "analyze_screen_vision", "target": "screen"}}
+
+User: Jarvis find me LangGraph tutorials
+{{"action": "planner", "target": "find me LangGraph tutorials"}}
+
+User: Jarvis research dopamine transporter papers
+{{"action": "planner", "target": "research dopamine transporter papers"}}
+
+User: Jarvis plan how to learn Python
+{{"action": "planner", "target": "plan how to learn Python"}}
 
 Now parse this command:
 

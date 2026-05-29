@@ -19,7 +19,12 @@ from tools.screen_actions import (
     take_and_open_screenshot,
     analyze_screen
 )
-
+from tools.screen_actions import (
+    take_screenshot,
+    take_and_open_screenshot,
+    analyze_screen,
+    analyze_screen_vision
+)
 
 mcp = FastMCP("mac-jarvis")
 
@@ -102,6 +107,12 @@ def jarvis_take_and_open_screenshot() -> str:
 def jarvis_analyze_screen() -> str:
     """Take screenshot, extract visible text, and explain what is on screen."""
     return analyze_screen()
+
+@mcp.tool()
+def jarvis_analyze_screen_vision() -> str:
+    """Analyze screenshot using local vision model."""
+    return analyze_screen_vision()
+
 
 
 
