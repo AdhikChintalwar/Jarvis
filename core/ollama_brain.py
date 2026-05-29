@@ -25,6 +25,9 @@ Allowed actions:
 - disk_space
 - cpu_usage
 - lock_mac
+- take_screenshot
+- take_and_open_screenshot
+- analyze_screen
 
 Examples:
 
@@ -86,6 +89,21 @@ User: Jarvis open YouTube and search for trending videos
 
 User: Jarvis open Google and search for dopamine transporter papers
 {{"action": "search_google", "target": "dopamine transporter papers"}}
+
+User: Jarvis take a screenshot
+{{"action": "take_screenshot", "target": "screen"}}
+
+User: Jarvis screenshot my screen
+{{"action": "take_and_open_screenshot", "target": "screen"}}
+
+User: Jarvis what is on my screen
+{{"action": "analyze_screen", "target": "screen"}}
+
+User: Jarvis read this error
+{{"action": "analyze_screen", "target": "screen"}}
+
+User: Jarvis analyze my screen
+{{"action": "analyze_screen", "target": "screen"}}
 
 Now parse this command:
 

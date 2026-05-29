@@ -4,11 +4,11 @@ import asyncio
 import pyaudio
 import numpy as np
 from openwakeword.model import Model
-from memory_store import save_memory, get_last_command
+from core.memory_store import save_memory, get_last_command
 
-from offline_listener import listen_offline
-from ollama_brain import understand_command
-from mcp_client import call_mcp_tool
+from core.offline_listener import listen_offline
+from core.ollama_brain import understand_command
+from mcp_layer.mcp_client import call_mcp_tool
 
 WAKE_THRESHOLD = 0.65
 COOLDOWN_SECONDS = 2
@@ -148,6 +148,33 @@ def handle_command(text: str):
             call_mcp_tool("jarvis_lock_mac", {})
         )
         print(result)
+
+    elif action == "take_screenshot":
+        speak("Taking screenshot")
+        result = asyncio.run(
+            call_mcp_tool("jarvis_take_screenshot", {})
+        )
+        text = result.content[0].text
+        speak("Screenshot saved")
+        print(text)
+
+    elif action == "take_and_open_screenshot":
+        speak("Taking screenshot")
+        result = asyncio.run(
+            call_mcp_tool("jarvis_take_and_open_screenshot", {})
+        )
+        text = result.content[0].text
+        speak("Screenshot opened")
+        print(text)
+
+    elif action == "analyze_screen":
+        speak("Analyzing your screen")
+        result = asyncio.run(
+            call_mcp_tool("jarvis_analyze_screen", {})
+        )
+        text = result.content[0].text
+        print(text)
+        speak(text[:250])
 
     else:
         print("Unknown command ignored.")

@@ -2,8 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 import time
-CONFIG_PATH = Path(__file__).parent / "config.json"
-
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "config.json"
 with open(CONFIG_PATH, "r") as f:
     CONFIG = json.load(f)
 
