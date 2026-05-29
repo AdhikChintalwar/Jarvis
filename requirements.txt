@@ -1,0 +1,3 @@
+mcp
+SpeechRecognition
+pyaudio

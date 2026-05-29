@@ -1,0 +1,27 @@
+{
+  "apps": {
+    "chrome": "Google Chrome",
+    "safari": "Safari",
+    "spotify": "Spotify",
+    "vscode": "Visual Studio Code",
+    "terminal": "Terminal",
+    "notes": "Notes",
+    "mail": "Mail",
+    "messages": "Messages",
+    "calendar": "Calendar",
+    "settings": "System Settings"
+  },
+  "websites": {
+    "youtube": "https://youtube.com",
+    "gmail": "https://mail.google.com",
+    "google": "https://google.com",
+    "chatgpt": "https://chatgpt.com"
+  },
+  "profiles": {
+    "coding": ["Visual Studio Code", "Terminal", "Google Chrome"],
+
+    "study": ["Notes", "Safari"],
+
+    "music": ["Spotify"]
+  }
+}
