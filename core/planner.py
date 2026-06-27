@@ -4,25 +4,44 @@ import ollama
 MODEL = "llama3.2:3b"
 
 
+def extract_json(content: str) -> dict:
+    start = content.find("{")
+    end = content.rfind("}") + 1
+
+    if start == -1 or end == 0:
+        raise ValueError("No JSON found")
+
+    return json.loads(content[start:end])
+
+
 def create_plan(goal: str) -> dict:
     prompt = f"""
-You are a planner for a local Mac AI assistant named Jarvis.
 
+You are a planner for a local Mac AI assistant named Baby.
 Return ONLY valid JSON.
 
-You can create a multi-step plan using these tools:
+Important tool rules:
+- YouTube is not a Mac app.
+- Google is not a Mac app.
+- Do not use open_app for YouTube, Google, websites, or web searches.
+- For YouTube video requests, use get_youtube_video_details or get_youtube_titles.
+- For opening YouTube search results, use search_youtube.
+- For Google/web research, use search_google.
 
 Available tools:
 - search_google
 - search_youtube
+- get_youtube_titles
 - analyze_screen_vision
 - take_screenshot
 - open_website
 - open_app
+- run_profile
 - battery_status
 - current_time
 - disk_space
 - cpu_usage
+- get_youtube_video_details
 
 Rules:
 - Keep plans short.
@@ -31,6 +50,22 @@ Rules:
 - Do not use risky actions.
 - Each step must have "tool" and "target".
 - Return JSON only.
+- For YouTube video recommendations, first use get_youtube_titles.
+- For setup/profile requests, use run_profile.
+- Do not use analyze_screen_vision unless the user asks about the screen.
+
+For YouTube video recommendations, prefer get_youtube_video_details over get_youtube_titles.
+
+For any request that says "find me good videos", "best videos", "recommend videos", or "good tutorials", DO NOT use search_youtube first.
+Use get_youtube_video_details if available.
+If get_youtube_video_details is not available, use get_youtube_titles.
+Use search_youtube only when the user explicitly says "search YouTube for X" or "open YouTube".
+
+Never return an empty target. Every step target must be meaningful.
+For get_youtube_video_details, the target must be the video search query.
+For "find good Python videos", use target "Python beginner tutorial".
+Do not use search_google before get_youtube_video_details for YouTube/video requests.
+
 
 Example:
 User goal: Find LangGraph tutorials on YouTube
@@ -38,8 +73,8 @@ User goal: Find LangGraph tutorials on YouTube
 {{
   "plan": [
     {{
-      "tool": "search_youtube",
-      "target": "LangGraph tutorials"
+      "tool": "get_youtube_titles",
+      "target": "LangGraph tutorial"
     }}
   ]
 }}
@@ -52,6 +87,42 @@ User goal: Research dopamine transporter papers
     {{
       "tool": "search_google",
       "target": "dopamine transporter research papers"
+    }}
+  ]
+}}
+
+Example:
+User goal: Open my coding setup
+
+{{
+  "plan": [
+    {{
+      "tool": "run_profile",
+      "target": "coding"
+    }}
+  ]
+}}
+
+Example:
+User goal: Find good Python videos
+
+{{
+  "plan": [
+    {{
+      "tool": "get_youtube_video_details",
+      "target": "Python beginner tutorial"
+    }}
+  ]
+}}
+
+Example:
+User goal: Find good Python videos
+
+{{
+  "plan": [
+    {{
+      "tool": "get_youtube_titles",
+      "target": "Python beginner tutorial"
     }}
   ]
 }}
@@ -73,7 +144,7 @@ Now create a plan for this goal:
     print("RAW PLAN:", content)
 
     try:
-        return json.loads(content)
+        return extract_json(content)
     except Exception:
         return {
             "plan": [

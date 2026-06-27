@@ -17,11 +17,30 @@
     "google": "https://google.com",
     "chatgpt": "https://chatgpt.com"
   },
+  "projects": {
+  "jarvis": {
+    "folder": "/Users/adhik_chintalwar/Desktop/Jarvis voice"
+  }
+  },
+  
   "profiles": {
-    "coding": ["Visual Studio Code", "Terminal", "Google Chrome"],
+    "coding": [
+      "Visual Studio Code",
+      "Terminal",
+      "Google Chrome"
+    ],
 
-    "study": ["Notes", "Safari"],
+    "ai": [
+      "Visual Studio Code",
+      "Terminal",
+      "Google Chrome"
+    ],
 
-    "music": ["Spotify"]
+    "research": [
+      "Google Chrome",
+      "Notes",
+      "Preview"
+    ]
+  
   }
 }

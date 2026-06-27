@@ -4,19 +4,34 @@ import asyncio
 import pyaudio
 import numpy as np
 from openwakeword.model import Model
-from core.memory_store import save_memory, get_last_command
 
+from core.memory_store import save_memory, get_last_command
 from core.offline_listener import listen_offline
 from core.ollama_brain import understand_command
-from mcp_layer.mcp_client import call_mcp_tool
 from core.planner import create_plan
+from core.agent_loop import decide_next_step
+from mcp_layer.mcp_client import call_mcp_tool
 
-WAKE_THRESHOLD = 0.65
+
+WAKE_THRESHOLD = 0.80
 COOLDOWN_SECONDS = 2
+
+
+VALID_ACTIONS = {
+    "open_app", "open_website", "open_folder", "run_profile",
+    "repeat_last", "search_google", "search_youtube",
+    "battery_status", "current_time", "disk_space", "cpu_usage",
+    "lock_mac", "take_screenshot", "take_and_open_screenshot",
+    "analyze_screen", "analyze_screen_vision", "planner","open_project"
+}
 
 
 def speak(text: str):
     os.system(f'say "{text}"')
+
+
+def run_mcp(tool_name: str, arguments: dict):
+    return asyncio.run(call_mcp_tool(tool_name, arguments))
 
 
 def is_valid_command(text: str) -> bool:
@@ -28,19 +43,7 @@ def is_valid_command(text: str) -> bool:
     if len(text) < 3:
         return False
 
-    bad_phrases = [
-        "thank you",
-        "thanks",
-        "bye",
-        "you",
-        ".",
-        ","
-    ]
-
-    if text in bad_phrases:
-        return False
-
-    return True
+    return text not in ["thank you", "thanks", "bye", "you", ".", ","]
 
 
 def handle_command(text: str):
@@ -56,9 +59,23 @@ def handle_command(text: str):
     action = parsed.get("action")
     target = parsed.get("target")
 
+    if action not in VALID_ACTIONS:
+        if any(word in text.lower() for word in ["find", "research", "plan", "compare", "investigate"]):
+            action = "planner"
+            target = text
+        else:
+            print("Unknown command ignored.")
+            return
+
     if action == "planner":
         speak("Creating a plan")
         plan_data = create_plan(target)
+        steps = plan_data.get("plan", [])
+
+        for step in steps:
+            if not step.get("target"):
+                print("Invalid plan: empty target")
+                step["target"] = target
 
         print("Plan:", plan_data)
 
@@ -76,86 +93,182 @@ def handle_command(text: str):
 
             print(f"Executing step: {tool} -> {step_target}")
 
+            if tool == "open_app" and step_target.lower() in ["youtube", "google", "gmail"]:
+                tool = "open_website"
+
             if tool == "search_google":
                 speak(f"Searching Google for {step_target}")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_search_google", {"query": step_target})
-                )
+                result = run_mcp("jarvis_search_google", {"query": step_target})
                 print(result)
 
             elif tool == "search_youtube":
                 speak(f"Searching YouTube for {step_target}")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_search_youtube", {"query": step_target})
-                )
+                result = run_mcp("jarvis_search_youtube", {"query": step_target})
                 print(result)
+
+            elif tool == "get_youtube_video_details":
+                speak(f"Checking YouTube video details for {step_target}")
+
+                result = run_mcp(
+                    "jarvis_get_youtube_video_details",
+                    {"query": step_target}
+                )
+
+                observation = result.content[0].text
+
+                print("\nObservation:")
+                print(observation)
+
+                next_step = decide_next_step(target, observation)
+
+                print("\nNext Step:")
+                print(next_step)
+
+                next_action = next_step.get("action")
+                next_target = next_step.get("target")
+
+                if next_action == "final_answer":
+                    speak(next_target)
+                    print("\nFinal Answer:")
+                    print(next_target)
+
+                    if "http" in next_target:
+                        url = next_target.split("URL:")[-1].strip()
+                        run_mcp("jarvis_open_url", {"url": url})
+                    return
+
+                elif next_action == "search_youtube":
+                    speak(f"Searching YouTube for {next_target}")
+                    result = run_mcp(
+                        "jarvis_search_youtube",
+                        {"query": next_target}
+                    )
+                    print(result)
+
+                elif next_action == "search_google":
+                    speak(f"Searching Google for {next_target}")
+                    result = run_mcp(
+                        "jarvis_search_google",
+                        {"query": next_target}
+                    )
+                    print(result)
+
+            elif tool == "get_youtube_titles":
+                speak(f"Checking YouTube results for {step_target}")
+                result = run_mcp(
+                    "jarvis_get_youtube_titles",
+                    {"query": step_target}
+                )
+
+                observation = result.content[0].text
+
+                print("\nObservation:")
+                print(observation)
+
+                next_step = decide_next_step(target, observation)
+
+                print("\nNext Step:")
+                print(next_step)
+
+                next_action = next_step.get("action")
+                next_target = next_step.get("target")
+
+                if next_action == "final_answer":
+                    speak(next_target)
+                    print("\nFinal Answer:")
+                    print(next_target)
+                    return
+
+                elif next_action == "search_youtube":
+                    speak(f"Searching YouTube for {next_target}")
+                    result = run_mcp(
+                        "jarvis_search_youtube",
+                        {"query": next_target}
+                    )
+                    print(result)
+
+                elif next_action == "search_google":
+                    speak(f"Searching Google for {next_target}")
+                    result = run_mcp(
+                        "jarvis_search_google",
+                        {"query": next_target}
+                    )
+                    print(result)
 
             elif tool == "open_website":
                 speak(f"Opening {step_target}")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_open_website", {"site_or_url": step_target})
+                result = run_mcp(
+                    "jarvis_open_website",
+                    {"site_or_url": step_target}
                 )
                 print(result)
 
             elif tool == "open_app":
                 speak(f"Opening {step_target}")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_open_app", {"app_name": step_target})
+                result = run_mcp(
+                    "jarvis_open_app",
+                    {"app_name": step_target}
                 )
                 print(result)
 
             elif tool == "take_screenshot":
                 speak("Taking screenshot")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_take_screenshot", {})
-                )
+                result = run_mcp("jarvis_take_screenshot", {})
                 print(result)
 
             elif tool == "analyze_screen_vision":
                 speak("Analyzing screen")
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_analyze_screen_vision", {})
-                )
+                result = run_mcp("jarvis_analyze_screen_vision", {})
                 print(result)
 
             elif tool == "battery_status":
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_battery_status", {})
-                )
-                text = result.content[0].text
-                speak(text)
-                print(text)
+                result = run_mcp("jarvis_battery_status", {})
+                result_text = result.content[0].text
+                speak(result_text)
+                print(result_text)
 
             elif tool == "current_time":
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_current_time", {})
-                )
-                text = result.content[0].text
-                speak(text)
-                print(text)
+                result = run_mcp("jarvis_current_time", {})
+                result_text = result.content[0].text
+                speak(result_text)
+                print(result_text)
 
             elif tool == "disk_space":
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_disk_space", {})
-                )
-                text = result.content[0].text
-                speak(text)
-                print(text)
+                result = run_mcp("jarvis_disk_space", {})
+                result_text = result.content[0].text
+                speak(result_text)
+                print(result_text)
 
             elif tool == "cpu_usage":
-                result = asyncio.run(
-                    call_mcp_tool("jarvis_cpu_usage", {})
+                result = run_mcp("jarvis_cpu_usage", {})
+                result_text = result.content[0].text
+                speak(result_text)
+                print(result_text)
+
+            elif tool == "run_profile":
+                from core.memory_profiles import get_profile
+                apps = get_profile(step_target)
+                if apps:
+                    for app in apps:
+                            run_mcp(
+                                    "jarvis_open_app",
+                                    {"app_name": app}
+                                )
+                    speak(f"Started {step_target}")
+
+            elif action == "open_project":
+                speak(f"Opening {target} project")
+                result = run_mcp(
+                    "jarvis_open_project",
+                    {"project_name": target}
                 )
-                text = result.content[0].text
-                speak(text)
-                print(text)
+                print(result)
 
             else:
                 print(f"Unknown planner tool skipped: {tool}")
 
         speak("Plan completed")
         return
-    
 
     if action == "repeat_last":
         last = get_last_command()
@@ -168,130 +281,99 @@ def handle_command(text: str):
 
     if action == "open_app":
         speak(f"Opening {target}")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_open_app", {"app_name": target})
-        )
+        result = run_mcp("jarvis_open_app", {"app_name": target})
         print(result)
         save_memory("open_app", target)
 
     elif action == "open_website":
         speak(f"Opening {target}")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_open_website", {"site_or_url": target})
-        )
+        result = run_mcp("jarvis_open_website", {"site_or_url": target})
         print(result)
         save_memory("open_website", target)
 
     elif action == "open_folder":
         speak("Opening folder")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_open_folder", {"path": target})
-        )
+        result = run_mcp("jarvis_open_folder", {"path": target})
         print(result)
         save_memory("open_folder", target)
 
     elif action == "run_profile":
         speak(f"Starting {target} mode")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_run_profile", {"profile_name": target})
-        )
+        result = run_mcp("jarvis_run_profile", {"profile_name": target})
         print(result)
         save_memory("run_profile", target)
 
     elif action == "search_google":
         speak(f"Searching Google for {target}")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_search_google", {"query": target})
-        )
+        result = run_mcp("jarvis_search_google", {"query": target})
         print(result)
 
     elif action == "search_youtube":
         speak(f"Searching YouTube for {target}")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_search_youtube", {"query": target})
-        )
+        result = run_mcp("jarvis_search_youtube", {"query": target})
         print(result)
 
     elif action == "battery_status":
-        result = asyncio.run(
-            call_mcp_tool("jarvis_battery_status", {})
-        )
-        text = result.content[0].text
-        speak(text)
-        print(text)
+        result = run_mcp("jarvis_battery_status", {})
+        result_text = result.content[0].text
+        speak(result_text)
+        print(result_text)
 
     elif action == "current_time":
-        result = asyncio.run(
-            call_mcp_tool("jarvis_current_time", {})
-        )
-        text = result.content[0].text
-        speak(text)
-        print(text)
+        result = run_mcp("jarvis_current_time", {})
+        result_text = result.content[0].text
+        speak(result_text)
+        print(result_text)
 
     elif action == "disk_space":
-        result = asyncio.run(
-            call_mcp_tool("jarvis_disk_space", {})
-        )
-        text = result.content[0].text
-        speak(text)
-        print(text)
+        result = run_mcp("jarvis_disk_space", {})
+        result_text = result.content[0].text
+        speak(result_text)
+        print(result_text)
 
     elif action == "cpu_usage":
-        result = asyncio.run(
-            call_mcp_tool("jarvis_cpu_usage", {})
-        )
-        text = result.content[0].text
-        speak(text)
-        print(text)
+        result = run_mcp("jarvis_cpu_usage", {})
+        result_text = result.content[0].text
+        speak(result_text)
+        print(result_text)
 
     elif action == "lock_mac":
         speak("Locking your Mac")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_lock_mac", {})
-        )
+        result = run_mcp("jarvis_lock_mac", {})
         print(result)
 
     elif action == "take_screenshot":
         speak("Taking screenshot")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_take_screenshot", {})
-        )
-        text = result.content[0].text
+        result = run_mcp("jarvis_take_screenshot", {})
+        result_text = result.content[0].text
         speak("Screenshot saved")
-        print(text)
+        print(result_text)
 
     elif action == "take_and_open_screenshot":
         speak("Taking screenshot")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_take_and_open_screenshot", {})
-        )
-        text = result.content[0].text
+        result = run_mcp("jarvis_take_and_open_screenshot", {})
+        result_text = result.content[0].text
         speak("Screenshot opened")
-        print(text)
+        print(result_text)
 
     elif action == "analyze_screen":
         speak("Analyzing your screen")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_analyze_screen", {})
-        )
-        text = result.content[0].text
-        print(text)
-        speak(text[:250])
+        result = run_mcp("jarvis_analyze_screen", {})
+        result_text = result.content[0].text
+        print(result_text)
+        speak(result_text[:250])
 
     elif action == "analyze_screen_vision":
         speak("Looking at your screen")
-        result = asyncio.run(
-            call_mcp_tool("jarvis_analyze_screen_vision", {})
-        )
+        result = run_mcp("jarvis_analyze_screen_vision", {})
+        result_text = result.content[0].text
+        print(result_text)
+        speak(result_text[:250])
 
-        text = result.content[0].text
-        print(text)
-        speak(text[:250])
-
+    
 
     else:
         print("Unknown command ignored.")
-        # Do not speak this every time, otherwise it becomes annoying
 
 
 def start_jarvis():
@@ -315,7 +397,7 @@ def start_jarvis():
         frames_per_buffer=CHUNK
     )
 
-    speak("Jarvis is ready")
+    speak("Baby is ready")
     print("Waiting for wake word...")
 
     last_trigger_time = 0
@@ -330,27 +412,35 @@ def start_jarvis():
             current_time = time.time()
 
             if score > WAKE_THRESHOLD and current_time - last_trigger_time > COOLDOWN_SECONDS:
-                last_trigger_time = current_time
+                if (
+                    key == "hey_jarvis"
+                    and score > WAKE_THRESHOLD
+                    and current_time - last_trigger_time > COOLDOWN_SECONDS
+                ):
+                    last_trigger_time = current_time
+                    print(f"Wake word detected: {key}")
+                    speak("Yes")
+                    time.sleep(0.5)
+                    command_text = listen_offline()
+                    print("Heard command:", command_text)
+                    command_text_lower = command_text.lower()
 
-                print(f"Wake word detected: {key}")
-                speak("Yes")
+                    if (
+                        "stop baby" in command_text_lower
+                        or "exit baby" in command_text_lower
+                        or "exit jarvis" in command_text_lower
+                        or "stop jarvis" in command_text_lower
+                    ):
+                        speak("Baby stopped")
+                        print("Baby stopped.")
+                        return
 
-                time.sleep(0.5)
+                    handle_command(command_text)
 
-                command_text = listen_offline()
-                print("Heard command:", command_text)
+                    print("Cooling down...")
+                    time.sleep(2)
 
-                if "stop jarvis" in command_text or "exit jarvis" in command_text:
-                    speak("Jarvis stopped")
-                    print("Jarvis stopped.")
-                    return
-
-                handle_command(command_text)
-
-                print("Cooling down...")
-                time.sleep(2)
-
-                print("Waiting for wake word again...")
+                    print("Waiting for wake word again...")
 
 
 if __name__ == "__main__":

@@ -46,3 +46,53 @@ def run_profile(profile_name: str) -> str:
         time.sleep(1)
 
     return f"Started profile: {profile_name}"
+
+def run_profile(profile_name: str) -> str:
+    profile_name = profile_name.lower().strip()
+
+    profile_aliases = {
+        "coding setup": "coding",
+        "coding mode": "coding",
+        "ai setup": "ai",
+        "ai mode": "ai",
+        "research setup": "research",
+        "research mode": "research",
+        "study setup": "study",
+        "study mode": "study"
+    }
+
+    profile_name = profile_aliases.get(profile_name, profile_name)
+
+    profiles = CONFIG.get("profiles", {})
+
+    if profile_name not in profiles:
+        return f"Profile '{profile_name}' not found"
+
+    apps = profiles[profile_name]
+
+    for app in apps:
+        subprocess.run(["open", "-a", app])
+        time.sleep(1)
+
+    return f"Started profile: {profile_name}"
+
+def open_project(project_name: str) -> str:
+    project_name = project_name.lower().strip()
+
+    projects = CONFIG.get("projects", {})
+
+    if project_name not in projects:
+        return f"Project '{project_name}' not found"
+
+    folder = projects[project_name]["folder"]
+
+    subprocess.run(["open", "-a", "Visual Studio Code", folder])
+    time.sleep(1)
+
+    subprocess.run(["open", "-a", "Terminal", folder])
+
+    return f"Opened project: {project_name}"
+
+def open_url(url: str) -> str:
+    subprocess.run(["open", url])
+    return f"Opened URL: {url}"

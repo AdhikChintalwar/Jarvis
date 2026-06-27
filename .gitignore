@@ -1,2 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
 .venv/
-.venv/
+venv/
+
+# Mac
+.DS_Store
+
+# Screenshots / Generated Data
+dati/
+data/
+screenshots/
+
+# Logs
+logs/
+*.log
+
+# Environment Variables
+.env
+
+
+# VS Code
+.vscode/
+
+# Pytest
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Ollama temp files
+*.gguf
+
+# Memory files (optional)
+memory.json
+
+dati/

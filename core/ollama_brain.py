@@ -3,11 +3,20 @@ import ollama
 
 MODEL = "llama3.2:3b"
 
+def extract_json(content: str) -> dict:
+    start = content.find("{")
+    end = content.rfind("}") + 1
+
+    if start == -1 or end == 0:
+        raise ValueError("No JSON found")
+
+    json_text = content[start:end]
+    return json.loads(json_text)
 
 def understand_command(user_text: str) -> dict:
 
     prompt = f"""
-You are a Mac voice assistant command parser.
+You are Baby, a personal AI assistant running on a Mac.
 
 Return ONLY valid JSON.
 
@@ -30,6 +39,8 @@ Allowed actions:
 - analyze_screen
 - analyze_screen_vision
 - planner
+- open_project
+- get_youtube_video_details
 
 Examples:
 
@@ -40,8 +51,11 @@ Only use open_website when the user says open YouTube, open Google, open Gmail, 
 If the user says "open YouTube and search for X", return search_youtube with target X.
 If the user says "open Google and search for X", return search_google with target X.
 Never return a separate query field. Only return action and target.
-
+For YouTube video recommendations, prefer get_youtube_video_details over get_youtube_titles.
 If the user asks to find, research, plan, investigate, compare, or do a multi-step task, return planner.
+
+If the user says "my coding setup", "my AI setup", "my research setup", or "my study setup", always return run_profile.
+Never use open_website for anything ending with "setup".
 
 User: Jarvis open YouTube
 {{"action": "open_website", "target": "youtube"}}
@@ -127,6 +141,24 @@ User: Jarvis research dopamine transporter papers
 User: Jarvis plan how to learn Python
 {{"action": "planner", "target": "plan how to learn Python"}}
 
+User: Jarvis open my AI setup
+{{"action": "run_profile", "target": "ai"}}
+
+User: Jarvis my AI setup
+{{"action": "run_profile", "target": "ai"}}
+
+User: Jarvis open my coding setup
+{{"action": "run_profile", "target": "coding"}}
+
+User: Jarvis open my research setup
+{{"action": "run_profile", "target": "research"}}
+
+User: Jarvis open Jarvis project
+{{"action": "open_project", "target": "jarvis"}}
+
+User: Jarvis open my Jarvis workspace
+{{"action": "open_project", "target": "jarvis"}}
+
 Now parse this command:
 
 User: {user_text}
@@ -147,8 +179,8 @@ User: {user_text}
     print("RAW OLLAMA RESPONSE:", content)
 
     try:
-        return json.loads(content)
-
+        return extract_json(content)
+    
     except Exception:
         return {
             "action": "unknown",

@@ -1,17 +1,25 @@
 from mcp.server.fastmcp import FastMCP
 from tools.browser_actions import search_google, search_youtube
+from tools.mac_actions import open_url
 from tools.mac_actions import (
     open_app,
     open_website,
     open_folder,
     run_profile
 )
+from tools.mac_actions import open_project
 from tools.system_actions import (
     get_battery_status,
     get_current_time,
     get_disk_space,
     get_cpu_usage,
     lock_mac
+)
+from tools.browser_actions import (
+    search_google,
+    search_youtube,
+    get_youtube_titles,
+    get_youtube_video_details
 )
 from tools.screen_actions import take_screenshot, take_and_open_screenshot
 from tools.screen_actions import (
@@ -24,6 +32,11 @@ from tools.screen_actions import (
     take_and_open_screenshot,
     analyze_screen,
     analyze_screen_vision
+)
+from tools.browser_actions import (
+    search_google,
+    search_youtube,
+    get_youtube_titles
 )
 
 mcp = FastMCP("mac-jarvis")
@@ -113,6 +126,25 @@ def jarvis_analyze_screen_vision() -> str:
     """Analyze screenshot using local vision model."""
     return analyze_screen_vision()
 
+@mcp.tool()
+async def jarvis_get_youtube_titles(query: str) -> str:
+    """Search YouTube and return top video titles."""
+    return await get_youtube_titles(query)
+
+@mcp.tool()
+def jarvis_open_project(project_name: str) -> str:
+    """Open a saved project workspace."""
+    return open_project(project_name)
+
+@mcp.tool()
+async def jarvis_get_youtube_video_details(query: str) -> str:
+    """Search YouTube and return top video titles with URLs."""
+    return await get_youtube_video_details(query)
+
+@mcp.tool()
+def jarvis_open_url(url: str) -> str:
+    """Open a URL in the default browser."""
+    return open_url(url)
 
 
 
