@@ -1,7 +1,7 @@
 import json
 import ollama
 
-MODEL = "qwen3:4b"
+MODEL = "qwen3:30b"
 
 
 def extract_json(content: str) -> dict:

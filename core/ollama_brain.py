@@ -1,7 +1,7 @@
 import json
 import ollama
 
-MODEL = "llama3.2:3b"
+MODEL = "qwen3:30b"
 
 def extract_json(content: str) -> dict:
     start = content.find("{")
