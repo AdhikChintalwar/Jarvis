@@ -3,7 +3,9 @@ import ollama
 
 MODEL = "qwen3:30b"
 
+from core.tool_registry import get_tool_descriptions
 
+tool_text = get_tool_descriptions()
 def extract_json(content: str) -> dict:
     start = content.find("{")
     end = content.rfind("}") + 1
@@ -29,19 +31,8 @@ Important tool rules:
 - For Google/web research, use search_google.
 
 Available tools:
-- search_google
-- search_youtube
-- get_youtube_titles
-- analyze_screen_vision
-- take_screenshot
-- open_website
-- open_app
-- run_profile
-- battery_status
-- current_time
-- disk_space
-- cpu_usage
-- get_youtube_video_details
+
+{tool_text}
 
 Rules:
 - Keep plans short.

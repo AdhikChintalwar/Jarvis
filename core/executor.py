@@ -5,8 +5,7 @@ from core.ollama_brain import understand_command
 from core.planner import create_plan
 from core.agent_loop import decide_next_step
 from mcp_layer.mcp_client import call_mcp_tool
-
-
+from core.tool_registry import get_registered_tool
 VALID_ACTIONS = {
     "open_app", "open_website", "open_folder", "run_profile",
     "repeat_last", "search_google", "search_youtube",
@@ -172,101 +171,34 @@ def execute_command(text: str, speak):
             speak("I do not have anything to repeat")
             return
 
-    if action == "open_app":
-        speak(f"Opening {target}")
-        result = run_mcp("jarvis_open_app", {"app_name": target})
-        print(result)
-        save_memory("open_app", target)
+    registered_tool = get_registered_tool(action)
 
-    elif action == "open_website":
-        speak(f"Opening {target}")
-        result = run_mcp("jarvis_open_website", {"site_or_url": target})
-        print(result)
-        save_memory("open_website", target)
+    if registered_tool:
+        spoken = registered_tool.get("spoken")
+        mcp_tool = registered_tool["mcp_tool"]
+        arg_name = registered_tool.get("arg_name")
 
-    elif action == "open_folder":
-        speak("Opening folder")
-        result = run_mcp("jarvis_open_folder", {"path": target})
-        print(result)
-        save_memory("open_folder", target)
+        if spoken:
+            if target:
+                speak(f"{spoken} {target}")
+            else:
+                speak(spoken)
 
-    elif action == "run_profile":
-        speak(f"Starting {target} mode")
-        result = run_mcp("jarvis_run_profile", {"profile_name": target})
-        print(result)
-        save_memory("run_profile", target)
+        if arg_name:
+            arguments = {arg_name: target}
+        else:
+            arguments = {}
 
-    elif action == "open_project":
-        speak(f"Opening {target} project")
-        result = run_mcp("jarvis_open_project", {"project_name": target})
+        result = run_mcp(mcp_tool, arguments)
+
         print(result)
 
-    elif action == "search_google":
-        speak(f"Searching Google for {target}")
-        result = run_mcp("jarvis_search_google", {"query": target})
-        print(result)
+        if registered_tool.get("speak_result"):
+            result_text = result.content[0].text
+            speak(result_text)
+            print(result_text)
 
-    elif action == "search_youtube":
-        speak(f"Searching YouTube for {target}")
-        result = run_mcp("jarvis_search_youtube", {"query": target})
-        print(result)
+        if registered_tool.get("remember"):
+            save_memory(action, target)
 
-    elif action == "battery_status":
-        result = run_mcp("jarvis_battery_status", {})
-        result_text = result.content[0].text
-        speak(result_text)
-        print(result_text)
-
-    elif action == "current_time":
-        result = run_mcp("jarvis_current_time", {})
-        result_text = result.content[0].text
-        speak(result_text)
-        print(result_text)
-
-    elif action == "disk_space":
-        result = run_mcp("jarvis_disk_space", {})
-        result_text = result.content[0].text
-        speak(result_text)
-        print(result_text)
-
-    elif action == "cpu_usage":
-        result = run_mcp("jarvis_cpu_usage", {})
-        result_text = result.content[0].text
-        speak(result_text)
-        print(result_text)
-
-    elif action == "lock_mac":
-        speak("Locking your Mac")
-        result = run_mcp("jarvis_lock_mac", {})
-        print(result)
-
-    elif action == "take_screenshot":
-        speak("Taking screenshot")
-        result = run_mcp("jarvis_take_screenshot", {})
-        result_text = result.content[0].text
-        speak("Screenshot saved")
-        print(result_text)
-
-    elif action == "take_and_open_screenshot":
-        speak("Taking screenshot")
-        result = run_mcp("jarvis_take_and_open_screenshot", {})
-        result_text = result.content[0].text
-        speak("Screenshot opened")
-        print(result_text)
-
-    elif action == "analyze_screen":
-        speak("Analyzing your screen")
-        result = run_mcp("jarvis_analyze_screen", {})
-        result_text = result.content[0].text
-        print(result_text)
-        speak(result_text[:250])
-
-    elif action == "analyze_screen_vision":
-        speak("Looking at your screen")
-        result = run_mcp("jarvis_analyze_screen_vision", {})
-        result_text = result.content[0].text
-        print(result_text)
-        speak(result_text[:250])
-
-    else:
-        print("Unknown command ignored.")
+        return

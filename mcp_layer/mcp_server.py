@@ -1,39 +1,39 @@
 from mcp.server.fastmcp import FastMCP
-from tools.browser_actions import search_google, search_youtube
-from tools.mac_actions import open_url
-from tools.mac_actions import (
+from skills.browser_actions import search_google, search_youtube
+from skills.mac_actions import open_url
+from skills.mac_actions import (
     open_app,
     open_website,
     open_folder,
     run_profile
 )
-from tools.mac_actions import open_project
-from tools.system_actions import (
+from skills.mac_actions import open_project
+from skills.system_actions import (
     get_battery_status,
     get_current_time,
     get_disk_space,
     get_cpu_usage,
     lock_mac
 )
-from tools.browser_actions import (
+from skills.browser_actions import (
     search_google,
     search_youtube,
     get_youtube_titles,
     get_youtube_video_details
 )
-from tools.screen_actions import take_screenshot, take_and_open_screenshot
-from tools.screen_actions import (
+from skills.screen_actions import take_screenshot, take_and_open_screenshot
+from skills.screen_actions import (
     take_screenshot,
     take_and_open_screenshot,
     analyze_screen
 )
-from tools.screen_actions import (
+from skills.screen_actions import (
     take_screenshot,
     take_and_open_screenshot,
     analyze_screen,
     analyze_screen_vision
 )
-from tools.browser_actions import (
+from skills.browser_actions import (
     search_google,
     search_youtube,
     get_youtube_titles
