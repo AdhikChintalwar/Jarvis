@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baby Neural Command Center</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <main class="command-center">
+    <section class="left-panel">
+      <h1>BABY</h1>
+      <p class="subtitle">Neural Command Center</p>
+
+      <div class="status-card">
+        <span class="status-dot"></span>
+        <span id="statusText">Listening</span>
+      </div>
+
+      <div class="conversation">
+        <p class="label">USER</p>
+        <p id="userText">Open VS Code and find me good Python videos.</p>
+
+        <p class="label">BABY</p>
+        <p id="babyText">Routing tasks to agents...</p>
+      </div>
+    </section>
+
+    <section class="core-panel">
+      <div class="orbit orbit-1"></div>
+      <div class="orbit orbit-2"></div>
+      <div class="orbit orbit-3"></div>
+
+      <div class="neural-core">
+        <div class="core-glow"></div>
+        <div class="core-inner"></div>
+      </div>
+
+      <p class="core-state" id="coreState">ONLINE</p>
+    </section>
+
+    <section class="right-panel">
+      <h2>Agents</h2>
+
+      <div class="agent active">
+        <span>Desktop Agent</span>
+        <small>Opening VS Code</small>
+      </div>
+
+      <div class="agent working">
+        <span>Browser Agent</span>
+        <small>Searching YouTube</small>
+      </div>
+
+      <div class="agent idle">
+        <span>Coding Agent</span>
+        <small>Idle</small>
+      </div>
+
+      <div class="agent idle">
+        <span>Memory Agent</span>
+        <small>Idle</small>
+      </div>
+
+      <h2>Pipeline</h2>
+
+      <div class="pipeline">
+        <div>Voice</div>
+        <div>Task Splitter</div>
+        <div>Fast Router</div>
+        <div>Agent</div>
+        <div>Executor</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

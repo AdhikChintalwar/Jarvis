@@ -1,0 +1,211 @@
+* {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    background: radial-gradient(circle at center, #07121f 0%, #02040a 70%);
+    color: #d8f6ff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(circle, black 30%, transparent 80%);
+  }
+  
+  .command-center {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr;
+    gap: 24px;
+    padding: 32px;
+  }
+  
+  .left-panel,
+  .right-panel {
+    border: 1px solid rgba(0, 225, 255, 0.22);
+    background: rgba(2, 14, 26, 0.72);
+    backdrop-filter: blur(18px);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 0 40px rgba(0, 225, 255, 0.08);
+  }
+  
+  h1 {
+    margin: 0;
+    font-size: 52px;
+    letter-spacing: 8px;
+  }
+  
+  .subtitle {
+    color: #5ee7ff;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+  
+  .status-card {
+    margin-top: 40px;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(0, 225, 255, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+  }
+  
+  .status-dot {
+    width: 14px;
+    height: 14px;
+    background: #00f5ff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #00f5ff;
+    animation: pulse 1.4s infinite;
+  }
+  
+  .conversation {
+    margin-top: 36px;
+    line-height: 1.6;
+  }
+  
+  .label {
+    font-size: 12px;
+    color: #6aefff;
+    letter-spacing: 2px;
+    margin-top: 28px;
+  }
+  
+  .core-panel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .neural-core {
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    position: relative;
+    background: radial-gradient(circle, #b6fbff 0%, #00d9ff 28%, #013c5a 65%, transparent 70%);
+    box-shadow:
+      0 0 40px #00eaff,
+      0 0 100px rgba(0, 234, 255, 0.6),
+      inset 0 0 50px rgba(255, 255, 255, 0.35);
+    animation: breathe 2.4s infinite ease-in-out;
+  }
+  
+  .core-glow {
+    position: absolute;
+    inset: -35px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 234, 255, 0.35);
+    animation: rotate 8s linear infinite;
+  }
+  
+  .core-inner {
+    position: absolute;
+    inset: 70px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 35px white;
+  }
+  
+  .orbit {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 234, 255, 0.25);
+  }
+  
+  .orbit-1 {
+    width: 340px;
+    height: 340px;
+    animation: rotate 10s linear infinite;
+  }
+  
+  .orbit-2 {
+    width: 470px;
+    height: 470px;
+    animation: rotateReverse 16s linear infinite;
+  }
+  
+  .orbit-3 {
+    width: 610px;
+    height: 610px;
+    animation: rotate 24s linear infinite;
+  }
+  
+  .core-state {
+    position: absolute;
+    bottom: 80px;
+    color: #5ee7ff;
+    letter-spacing: 4px;
+  }
+  
+  .agent {
+    margin: 16px 0;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 4px solid #334;
+  }
+  
+  .agent span {
+    display: block;
+    font-size: 18px;
+  }
+  
+  .agent small {
+    color: #9edff0;
+  }
+  
+  .agent.active {
+    border-color: #00f5ff;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.12);
+  }
+  
+  .agent.working {
+    border-color: #9b5cff;
+    box-shadow: 0 0 20px rgba(155, 92, 255, 0.16);
+  }
+  
+  .agent.idle {
+    opacity: 0.55;
+  }
+  
+  .pipeline div {
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(0, 225, 255, 0.07);
+    text-align: center;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.25); }
+  }
+  
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.96); }
+    50% { transform: scale(1.06); }
+  }
+  
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes rotateReverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
