@@ -6,6 +6,9 @@ from core.planner import create_plan
 from core.agent_loop import decide_next_step
 from mcp_layer.mcp_client import call_mcp_tool
 from core.tool_registry import get_registered_tool
+from core.event_bus import publish
+
+
 VALID_ACTIONS = {
     "open_app", "open_website", "open_folder", "run_profile",
     "repeat_last", "search_google", "search_youtube",
@@ -34,7 +37,23 @@ def execute_tool_decision(tool: str, target: str, speak):
         else:
             arguments = {}
 
+        publish(
+            "tool_started",
+            {
+                "tool": tool,
+                "target": target
+            }
+        )
+
         result = run_mcp(mcp_tool, arguments)
+
+        publish(
+        "tool_finished",
+            {
+                "tool": tool,
+                "target": target
+            }
+        )
         print(result)
 
         if tool in ["get_youtube_video_details", "get_youtube_titles"]:
@@ -124,6 +143,13 @@ def execute_command(text: str, speak):
         for step in steps:
             tool = step.get("tool")
             step_target = step.get("target")
+            publish(
+                "planner_step_started",
+                {
+                    "tool": tool,
+                    "target": step_target
+                }
+            )
 
             if not step_target:
                 step_target = target
@@ -231,6 +257,13 @@ def execute_command(text: str, speak):
                 print(f"Unknown planner tool skipped: {tool}")
 
         speak("Plan completed")
+        publish(
+            "planner_completed",
+            {
+                "tool": step.get("tool"),
+                "target": step.get("target")
+            }
+        )
         return
 
     if action == "repeat_last":

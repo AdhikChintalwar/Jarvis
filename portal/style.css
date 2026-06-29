@@ -209,3 +209,142 @@
     from { transform: rotate(360deg); }
     to { transform: rotate(0deg); }
   }
+
+  .agent-node {
+    position: absolute;
+    width: 110px;
+    height: 42px;
+    border: 1px solid rgba(0, 245, 255, 0.5);
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 245, 255, 0.08);
+    color: #d8f6ff;
+    font-size: 13px;
+    letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.15);
+    animation: nodePulse 3s infinite ease-in-out;
+  }
+  
+  .node-desktop {
+    left: 12%;
+    top: 48%;
+  }
+  
+  .node-browser {
+    top: 17%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .node-coding {
+    right: 12%;
+    top: 48%;
+  }
+  
+  .node-memory {
+    bottom: 17%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .connection {
+    position: absolute;
+    background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.5), transparent);
+    opacity: 0.7;
+    filter: blur(0.5px);
+  }
+  
+  .connection-horizontal {
+    width: 62%;
+    height: 1px;
+    top: 50%;
+    left: 19%;
+    animation: flowHorizontal 2.5s infinite linear;
+  }
+  
+  .connection-vertical {
+    width: 1px;
+    height: 62%;
+    left: 50%;
+    top: 19%;
+    background: linear-gradient(180deg, transparent, rgba(155, 92, 255, 0.6), transparent);
+    animation: flowVertical 2.5s infinite linear;
+  }
+  
+  @keyframes nodePulse {
+    0%, 100% {
+      box-shadow: 0 0 14px rgba(0, 245, 255, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(0, 245, 255, 0.45);
+    }
+  }
+  
+  @keyframes flowHorizontal {
+    0% {
+      opacity: 0.2;
+      transform: scaleX(0.7);
+    }
+    50% {
+      opacity: 0.9;
+      transform: scaleX(1);
+    }
+    100% {
+      opacity: 0.2;
+      transform: scaleX(0.7);
+    }
+  }
+  
+  @keyframes flowVertical {
+    0% {
+      opacity: 0.2;
+      transform: scaleY(0.7);
+    }
+    50% {
+      opacity: 0.9;
+      transform: scaleY(1);
+    }
+    100% {
+      opacity: 0.2;
+      transform: scaleY(0.7);
+    }
+  }
+  #particleCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .agent-node.node-active {
+    background: rgba(155, 92, 255, 0.22);
+    border-color: #b48cff;
+    box-shadow:
+      0 0 25px rgba(155, 92, 255, 0.9),
+      0 0 60px rgba(155, 92, 255, 0.35);
+    transform: scale(1.08);
+  }
+  .event-timeline {
+    margin-top: 28px;
+    max-height: 260px;
+    overflow: hidden;
+  }
+  
+  .event-item {
+    margin: 8px 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(0, 245, 255, 0.06);
+    border-left: 3px solid rgba(0, 245, 255, 0.5);
+    font-size: 13px;
+  }
+  
+  .event-item span {
+    color: #6aefff;
+    margin-right: 10px;
+  }
+  
+  .event-item strong {
+    font-weight: 500;
+  }

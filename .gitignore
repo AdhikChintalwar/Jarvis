@@ -50,3 +50,6 @@ core/jarvis_memory.json
 core/user_memory.json
 
 dati/
+
+data/events.jsonl
+data/portal_state.json
