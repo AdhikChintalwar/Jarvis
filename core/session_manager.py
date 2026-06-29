@@ -1,9 +1,10 @@
 import time
 
-from core.offline_listener import listen_offline
+from voice.streaming_asr import listen_streaming
 from core.executor import execute_command
-
-
+from core.task_splitter import split_tasks
+from brain.coordinator import coordinate_task
+from core.executor import execute_tool_decision
 SESSION_TIMEOUT_SECONDS = 60
 
 
@@ -39,8 +40,8 @@ def start_session(speak):
 
     while True:
         print("Listening in active session...")
-
-        command_text = listen_offline()
+        time.sleep(0.4)
+        command_text = listen_streaming()
         print("Heard command:", command_text)
 
         if should_stop(command_text):
@@ -61,7 +62,13 @@ def start_session(speak):
         last_activity = time.time()
 
         try:
-            execute_command(command_text, speak)
+            tasks = split_tasks(command_text)
+            print("Split tasks:", tasks)
+            for task in tasks:
+                decision = coordinate_task(task)
+                tool = decision.get("tool")
+                target = decision.get("target")
+                execute_tool_decision(tool, target, speak)
         except Exception as e:
             print("Error while executing command:", e)
             speak("Something went wrong")

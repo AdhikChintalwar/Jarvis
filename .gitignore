@@ -41,7 +41,12 @@ dist/
 # Ollama temp files
 *.gguf
 
+# Local ML models (download separately)
+models/
+
 # Memory files (optional)
 memory.json
+core/jarvis_memory.json
+core/user_memory.json
 
 dati/

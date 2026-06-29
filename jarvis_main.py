@@ -1,17 +1,12 @@
-import os
-
-from core.wake_engine import OpenWakeWordEngine
+from voice.tts import speak
+from voice.wake_engine import OpenWakeWordEngine
 from core.session_manager import start_session
-
-
-def speak(text: str):
-    os.system(f'say "{text}"')
 
 
 def start_baby():
     wake_engine = OpenWakeWordEngine()
 
-    speak("Baby is ready")
+    speak("Yes Boss")
 
     try:
         while True:
