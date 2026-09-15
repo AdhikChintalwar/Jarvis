@@ -24,6 +24,7 @@ class StockScoringEngine:
         fundamentals: FundamentalMetrics,
         risk: RiskMetrics,
         primary_financial: dict | None = None,
+        accounting_quality=None,
     ) -> StockScore:
         components = [
             self._trend_score(technical),
@@ -33,6 +34,7 @@ class StockScoringEngine:
                 fundamentals,
                 primary_financial=primary_financial,
             ),
+            self._accounting_quality_score(accounting_quality),
             self._risk_score(risk),
         ]
 
@@ -78,6 +80,7 @@ class StockScoringEngine:
                 if primary_financial
                 else 0.50
             ),
+            "accounting_quality": (accounting_quality.confidence / 100.0 if accounting_quality is not None else 0.0),
             "risk": 0.90 if risk.overall_risk is not None else 0.0,
         }
 
@@ -243,6 +246,14 @@ class StockScoringEngine:
                 f"(mean evidence authority {mean_authority:.0%})."
             ),
         )
+
+    def _accounting_quality_score(self, accounting_quality):
+        if accounting_quality is None:
+            score, explanation = 50.0, "Accounting quality unavailable."
+        else:
+            score = accounting_quality.score
+            explanation = f"Accounting quality score: {score:.0f}/100 with {accounting_quality.coverage:.0f}% evidence coverage."
+        return ScoreComponent(name="accounting_quality", score=score, weight=0.10, explanation=explanation)
 
     def _risk_score(self, risk):
         mapping = {

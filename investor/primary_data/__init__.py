@@ -39,3 +39,5 @@ __all__ = [
     "MacroEngine", "MacroContext",
     "PrimaryFinancialEngine",
 ]
+
+from .annual_history import AnnualFinancialHistoryBuilder

@@ -15,6 +15,7 @@ from investor.data_quality import (
 from investor.financial_engine import (
     FinancialEngine,
 )
+from investor.accounting_quality import AccountingQualityEngine
 
 from investor.indicators import (
     TechnicalIndicatorEngine,
@@ -108,6 +109,8 @@ class StockAnalyzer:
         self.financial_engine = (
             FinancialEngine()
         )
+
+        self.accounting_quality_engine = AccountingQualityEngine()
 
         self.sec_client = (
             SECClient()
@@ -299,8 +302,11 @@ class StockAnalyzer:
             )
         )
 
+        print("\n[7/11] Analyzing accounting quality...")
+        accounting_quality = self.accounting_quality_engine.analyze(primary_financial)
+
         print(
-            "[7/10] Checking SEC filings..."
+            "[8/11] Checking SEC filings..."
         )
 
         try:
@@ -330,7 +336,7 @@ class StockAnalyzer:
             )
 
         print(
-            "[8/10] Checking catalysts..."
+            "[9/11] Checking catalysts..."
         )
 
         news = (
@@ -348,7 +354,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[9/10] Analyzing market environment..."
+            "[10/11] Analyzing market environment..."
         )
 
         market_context = (
@@ -366,11 +372,12 @@ class StockAnalyzer:
                 ),
                 risk=risk,
                 primary_financial=primary_financial,
+                accounting_quality=accounting_quality,
             )
         )
 
         print(
-            "[10/10] Building investment thesis..."
+            "[11/11] Building investment thesis..."
         )
 
         data_quality = (
@@ -464,6 +471,9 @@ class StockAnalyzer:
 
             "financial_health":
                 financial_health,
+
+            "accounting_quality":
+                accounting_quality,
 
             "sec":
                 sec_analysis,

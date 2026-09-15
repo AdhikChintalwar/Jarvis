@@ -108,6 +108,8 @@ class EvidenceBuilder:
                 report.get("financial_health")
             ),
 
+            "accounting_quality": self._serialize(report.get("accounting_quality")),
+
             "primary_financial": self._serialize(
                 report.get("primary_financial")
             ),
@@ -291,6 +293,7 @@ class EvidenceBuilder:
                 "primary_source": primary_financial.get("primary_source"),
                 "secondary_source": primary_financial.get("secondary_source"),
                 "verified_financials": compact_verified,
+                "annual_history": primary_financial.get("annual_history", {}),
                 "balance_sheet_snapshot": self._select(
                     primary_financial.get("balance_sheet_snapshot", {}),
                     ["anchor_date", "confidence", "status",
@@ -321,6 +324,14 @@ class EvidenceBuilder:
                 "warnings",
                 "strengths",
             ],
+        )
+
+        compact["accounting_quality"] = self._select(
+            evidence.get("accounting_quality", {}),
+            ["score","confidence","coverage","history_periods","history_confidence","cash_conversion","fcf_margin","cash_earnings_gap_ratio",
+             "net_cash","cash_to_debt","shares_change_yoy","operating_margin_change_pp",
+             "net_margin_change_pp","fcf_margin_change_pp","diluted_shares_change_yoy",
+             "positive_signals","red_flags","unknowns"],
         )
 
         classification = evidence.get(

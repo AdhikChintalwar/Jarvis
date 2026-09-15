@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from .validation_provenance import build_sec_validation_provenance
 from .financial_statements import FinancialStatements
 from .financial_trends import FinancialTrendEngine
+from .annual_history import AnnualFinancialHistoryBuilder
 from .balance_sheet_resolver import BalanceSheetResolver
 from .annual_cross_validation import AnnualCrossValidationEngine
 from .verified_financials import VerifiedFinancialBuilder
@@ -15,6 +16,7 @@ class PrimaryFinancialEngine:
     def __init__(self):
         self.statements = FinancialStatements()
         self.trends = FinancialTrendEngine()
+        self.annual_history = AnnualFinancialHistoryBuilder()
         self.balance_sheet = BalanceSheetResolver()
         self.cross_validator = AnnualCrossValidationEngine()
         self.verified_builder = VerifiedFinancialBuilder()
@@ -22,6 +24,7 @@ class PrimaryFinancialEngine:
     def analyze_company(self, ticker: str, validate_secondary: bool = True) -> dict:
         ticker = ticker.upper()
         statements = self.statements.build(ticker)
+        annual_history = self.annual_history.build(statements)
         trend_report = self.trends.analyze(statements)
         metrics = dict(trend_report.metrics)
 
@@ -86,11 +89,12 @@ class PrimaryFinancialEngine:
         )
 
         return {
-            "schema_version": "3.5",
+            "schema_version": "3.7",
             "ticker": ticker,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "primary_source": "SEC EDGAR Company Facts / XBRL",
             "secondary_source": "Yahoo Finance annual statements",
+            "annual_history": annual_history,
             "trends": {
                 "metrics": metrics,
                 "warnings": trend_report.warnings,
