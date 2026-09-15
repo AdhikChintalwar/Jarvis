@@ -1,0 +1,24 @@
+BABY INVESTOR V4.1 — Advanced Market Intelligence
+
+Adds deterministic, stock-specific market context:
+- broad ETF participation using SPY / QQQ / IWM / RSP
+- equal-weight vs cap-weight participation
+- stock relative strength vs SPY over 20D/60D
+- sector ETF mapping and sector regime
+- stock relative strength vs sector
+- 20-day relative volume and up-volume participation
+- 20-day annualized realized volatility
+- source/as-of/confidence/coverage for every signal
+
+Important semantics
+-------------------
+- Yahoo remains a secondary/prototype market source. Derived signal confidence is capped.
+- High volume alone is NOT bullish or bearish; price direction must confirm it.
+- Missing data is neutral.
+- V4.1 is evidence-only. Advanced market intelligence does NOT alter StockScore yet.
+- Sector ETFs are proxies, not exact peer groups.
+
+Next after validation
+---------------------
+V4.1.1 calibration if real data exposes semantic issues.
+Then Unified Risk Model can consume verified macro + advanced-market evidence.

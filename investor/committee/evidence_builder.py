@@ -148,6 +148,10 @@ class EvidenceBuilder:
                 report.get("macro_regime")
             ),
 
+            "advanced_market": self._serialize(
+                report.get("advanced_market")
+            ),
+
             "data_quality": self._serialize(
                 report.get("data_quality")
             ),
@@ -366,6 +370,18 @@ class EvidenceBuilder:
              "volatility_regime","equity_regime","rate_regime","inflation_regime",
              "labor_regime","fed_policy_state","observations","positives","risks","unknowns",
              "generated_at"],
+        )
+
+        advanced_market = evidence.get("advanced_market", {})
+        compact["advanced_market"] = self._select(
+            advanced_market,
+            [
+                "score", "confidence", "coverage", "market_structure",
+                "breadth_regime", "stock_relative_strength", "sector_regime",
+                "participation_regime", "volatility_state", "sector",
+                "sector_etf", "signals", "positives", "risks", "unknowns",
+                "generated_at", "schema_version",
+            ],
         )
 
         classification = evidence.get(
