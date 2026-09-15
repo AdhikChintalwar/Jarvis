@@ -1,0 +1,21 @@
+BABY INVESTOR V4.3.3 — Canonical Timestamp Hotfix
+
+Root cause
+----------
+V4.3.2 fixed the underlying date window correctly, but the real-test assertion
+compared two differently formatted strings:
+
+    analytics: 2025-06-18T00:00:00
+    backtest : 2025-06-18 00:00:00
+
+They represent the same timestamp. The calculation and history alignment were
+already correct; only representation differed.
+
+Fix
+---
+- Portfolio analytics and backtester now use one canonical ISO-8601 formatter.
+- Report boundaries therefore compare exactly as strings.
+- Real tests also compare parsed pandas timestamps for semantic safety.
+- Warning version text is cleaned to V4.3.3.
+- Schema version is V4.3.3.
+- No return, risk, transaction-cost, or investment-score formula changed.
