@@ -1,0 +1,30 @@
+BABY INVESTOR V4.2.1 — Unified Risk Stabilization
+
+Fixes from V4.2
+---------------
+1. Financial evidence authority
+   - Reads V3.6.2 evidence_confidence / evidence_coverage.
+   - Keeps compatibility fallbacks for generic confidence/coverage names.
+   - Prevents financial risk from being calculated with zero authority.
+
+2. Deterministic liquidity
+   - StockAnalyzer calculates 20-session average dollar volume directly from
+     the already-loaded Close × Volume history.
+   - No additional API request is required.
+   - Liquidity evidence includes ADV20, average share volume, sessions, as-of,
+     source and authority.
+   - Relative volume remains a participation signal, NOT a liquidity proxy.
+
+3. Missing-neutral semantics remain unchanged
+   - If history cannot support ADV20, liquidity remains UNKNOWN.
+   - Missing liquidity does not create a bearish/risk penalty.
+
+4. Hard overrides remain unchanged
+   - >=90% 20D annualized realized volatility imposes an 80 risk-score floor.
+   - Severe ADV20 below $1M/day can impose a liquidity hard override.
+
+5. Safety boundary
+   - Unified risk remains deterministic.
+   - position_risk_multiplier is a future sizing safety input only.
+   - No real-money order is placed or authorized.
+   - Existing StockScore remains unchanged.

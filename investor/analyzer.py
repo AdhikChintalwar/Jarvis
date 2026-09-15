@@ -20,6 +20,7 @@ from investor.valuation_engine import ValuationEngine
 from investor.event_intelligence import EventIntelligenceEngine
 from investor.macro_regime import MacroRegimeEngine
 from investor.advanced_market_intelligence import AdvancedMarketIntelligenceEngine
+from investor.unified_risk import UnifiedRiskEngine
 
 from investor.indicators import (
     TechnicalIndicatorEngine,
@@ -119,6 +120,7 @@ class StockAnalyzer:
         self.event_intelligence_engine = EventIntelligenceEngine()
         self.macro_regime_engine = MacroRegimeEngine()
         self.advanced_market_engine = AdvancedMarketIntelligenceEngine()
+        self.unified_risk_engine = UnifiedRiskEngine()
 
         self.sec_client = (
             SECClient()
@@ -147,6 +149,44 @@ class StockAnalyzer:
         self.primary_financial_adapter = (
             PrimaryFinancialIntegrationAdapter()
         )
+
+    @staticmethod
+    def _build_liquidity_evidence(history):
+        """Build deterministic 20-session average dollar-volume evidence."""
+        result = {
+            "average_dollar_volume_20d": None,
+            "average_share_volume_20d": None,
+            "sessions": 0,
+            "as_of": None,
+            "source": "Derived from loaded Yahoo price/volume history",
+            "authority": 0.70,
+        }
+
+        try:
+            if history is None or len(history) == 0:
+                return result
+            if "Close" not in history or "Volume" not in history:
+                return result
+
+            frame = history[["Close", "Volume"]].dropna().tail(20)
+            if len(frame) < 10:
+                return result
+
+            dollar_volume = frame["Close"].astype(float) * frame["Volume"].astype(float)
+
+            result["average_dollar_volume_20d"] = float(dollar_volume.mean())
+            result["average_share_volume_20d"] = float(frame["Volume"].astype(float).mean())
+            result["sessions"] = int(len(frame))
+
+            idx = frame.index[-1]
+            result["as_of"] = (
+                idx.isoformat()
+                if hasattr(idx, "isoformat")
+                else str(idx)
+            )
+            return result
+        except Exception:
+            return result
 
     def analyze(
         self,
@@ -310,10 +350,10 @@ class StockAnalyzer:
             )
         )
 
-        print("\n[7/15] Analyzing accounting quality...")
+        print("\n[7/16] Analyzing accounting quality...")
         accounting_quality = self.accounting_quality_engine.analyze(primary_financial)
 
-        print("[8/15] Analyzing valuation...")
+        print("[8/16] Analyzing valuation...")
         valuation = self.valuation_engine.analyze(
             market=market,
             fundamentals=fundamentals,
@@ -321,7 +361,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[9/15] Checking SEC filings..."
+            "[9/16] Checking SEC filings..."
         )
 
         try:
@@ -358,7 +398,7 @@ class StockAnalyzer:
             deep_sec = DeepSECAnalysis()
 
         print(
-            "[10/15] Checking catalysts and event intelligence..."
+            "[10/16] Checking catalysts and event intelligence..."
         )
 
         news = (
@@ -382,7 +422,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[11/15] Analyzing market environment..."
+            "[11/16] Analyzing market environment..."
         )
 
         market_context = (
@@ -391,13 +431,13 @@ class StockAnalyzer:
         )
 
         print(
-            "[12/15] Analyzing macro and market regime..."
+            "[12/16] Analyzing macro and market regime..."
         )
 
         macro_regime = self.macro_regime_engine.analyze()
 
         print(
-            "[13/15] Analyzing advanced market intelligence..."
+            "[13/16] Analyzing advanced market intelligence..."
         )
 
         advanced_market = self.advanced_market_engine.analyze(
@@ -407,7 +447,26 @@ class StockAnalyzer:
         )
 
         print(
-            "[14/15] Finalizing deterministic evidence..."
+            "[14/16] Building unified risk model..."
+        )
+
+        liquidity_evidence = self._build_liquidity_evidence(history)
+
+        unified_risk = self.unified_risk_engine.analyze({
+            "financial_health": financial_health,
+            "accounting_quality": accounting_quality,
+            "valuation": valuation,
+            "event_intelligence": event_intelligence,
+            "macro_regime": macro_regime,
+            "advanced_market": advanced_market,
+            "market_data": info,
+            "liquidity_evidence": liquidity_evidence,
+            "technical": technical,
+            "classification": classification,
+        })
+
+        print(
+            "[15/16] Finalizing deterministic evidence..."
         )
 
         score = (
@@ -426,7 +485,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[15/15] Building investment thesis..."
+            "[16/16] Building investment thesis..."
         )
 
         data_quality = (
@@ -547,6 +606,12 @@ class StockAnalyzer:
 
             "advanced_market":
                 advanced_market,
+
+            "unified_risk":
+                unified_risk,
+
+            "liquidity_evidence":
+                liquidity_evidence,
 
             "data_quality":
                 data_quality,

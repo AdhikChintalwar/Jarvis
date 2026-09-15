@@ -152,6 +152,14 @@ class EvidenceBuilder:
                 report.get("advanced_market")
             ),
 
+            "unified_risk": self._serialize(
+                report.get("unified_risk")
+            ),
+
+            "liquidity_evidence": self._serialize(
+                report.get("liquidity_evidence")
+            ),
+
             "data_quality": self._serialize(
                 report.get("data_quality")
             ),
@@ -381,6 +389,26 @@ class EvidenceBuilder:
                 "participation_regime", "volatility_state", "sector",
                 "sector_etf", "signals", "positives", "risks", "unknowns",
                 "generated_at", "schema_version",
+            ],
+        )
+
+        unified_risk = evidence.get("unified_risk", {})
+        compact["unified_risk"] = self._select(
+            unified_risk,
+            [
+                "risk_score", "risk_level", "confidence", "coverage",
+                "dimensions", "hard_overrides", "risk_flags",
+                "protective_factors", "unknowns",
+                "position_risk_multiplier", "generated_at", "schema_version",
+            ],
+        )
+
+        liquidity_evidence = evidence.get("liquidity_evidence", {})
+        compact["liquidity_evidence"] = self._select(
+            liquidity_evidence,
+            [
+                "average_dollar_volume_20d", "average_share_volume_20d",
+                "sessions", "as_of", "source", "authority",
             ],
         )
 
