@@ -6,16 +6,11 @@ from .metric_semantics import MetricSemantics, ConceptSemantic
 from .financial_statements import FinancialStatements, MetricSeries
 from .financial_trends import FinancialTrendEngine, FinancialTrendReport
 from .balance_sheet_resolver import (
-    BalanceSheetResolver,
-    BalanceSheetMetric,
-    BalanceSheetSnapshot,
+    BalanceSheetResolver, BalanceSheetMetric, BalanceSheetSnapshot,
 )
-from .cross_source_validator import CrossSourceValidator, CrossSourceResult
-from .yahoo_financial_adapter import YahooFinancialAdapter
-from .yahoo_cross_validation import (
-    YahooCrossValidationEngine,
-    ValidationSummary,
-)
+from .yahoo_annual_adapter import YahooAnnualFinancialAdapter, SecondaryFinancialFact
+from .financial_reconciler import PeriodAwareFinancialReconciler, ReconciliationResult
+from .annual_cross_validation import AnnualCrossValidationEngine, CrossValidationSummary
 from .verified_financials import VerifiedFinancialBuilder, VerifiedMetric
 from .integration_adapter import PrimaryFinancialIntegrationAdapter
 from .evidence_adapter import PrimaryFinancialEvidenceAdapter
@@ -33,9 +28,9 @@ __all__ = [
     "FinancialStatements", "MetricSeries",
     "FinancialTrendEngine", "FinancialTrendReport",
     "BalanceSheetResolver", "BalanceSheetMetric", "BalanceSheetSnapshot",
-    "CrossSourceValidator", "CrossSourceResult",
-    "YahooFinancialAdapter",
-    "YahooCrossValidationEngine", "ValidationSummary",
+    "YahooAnnualFinancialAdapter", "SecondaryFinancialFact",
+    "PeriodAwareFinancialReconciler", "ReconciliationResult",
+    "AnnualCrossValidationEngine", "CrossValidationSummary",
     "VerifiedFinancialBuilder", "VerifiedMetric",
     "PrimaryFinancialIntegrationAdapter",
     "PrimaryFinancialEvidenceAdapter",

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-
+from .validation_provenance import build_sec_validation_provenance
 from .financial_statements import FinancialStatements
 from .financial_trends import FinancialTrendEngine
 from .balance_sheet_resolver import BalanceSheetResolver
-from .yahoo_cross_validation import YahooCrossValidationEngine
+from .annual_cross_validation import AnnualCrossValidationEngine
 from .verified_financials import VerifiedFinancialBuilder
 from .macro_provider import FREDProvider
 from .macro_engine import MacroEngine
@@ -16,15 +16,11 @@ class PrimaryFinancialEngine:
         self.statements = FinancialStatements()
         self.trends = FinancialTrendEngine()
         self.balance_sheet = BalanceSheetResolver()
-        self.yahoo_validation = YahooCrossValidationEngine()
+        self.cross_validator = AnnualCrossValidationEngine()
         self.verified_builder = VerifiedFinancialBuilder()
 
-    def analyze_company(
-        self,
-        ticker: str,
-        yahoo_info: dict | None = None,
-        yahoo_periods: dict | None = None,
-    ) -> dict:
+    def analyze_company(self, ticker: str, validate_secondary: bool = True) -> dict:
+        ticker = ticker.upper()
         statements = self.statements.build(ticker)
         trend_report = self.trends.analyze(statements)
         metrics = dict(trend_report.metrics)
@@ -32,62 +28,56 @@ class PrimaryFinancialEngine:
         bs = self.balance_sheet.resolve(statements)
         bs_metrics = bs.metrics
 
-        # Replace independently-selected balance-sheet values with values
-        # from one coherent snapshot.
         cash = self._bs_value(bs_metrics, "cash")
         short_inv = self._bs_value(bs_metrics, "short_term_investments")
         debt_current = self._bs_value(bs_metrics, "debt_current")
         debt_noncurrent = self._bs_value(bs_metrics, "debt_noncurrent")
 
-        debt_parts = [
-            x for x in (debt_current, debt_noncurrent)
-            if x is not None
-        ]
-
+        debt_parts = [x for x in (debt_current, debt_noncurrent) if x is not None]
         debt = sum(debt_parts) if debt_parts else None
 
         metrics["cash"] = cash
         metrics["short_term_investments"] = short_inv
         metrics["cash_plus_short_term_investments"] = (
             (cash or 0.0) + (short_inv or 0.0)
-            if cash is not None or short_inv is not None
-            else None
+            if cash is not None or short_inv is not None else None
         )
         metrics["debt"] = debt
         metrics["cash_to_debt"] = (
             cash / debt
-            if cash is not None and debt is not None and debt > 0
-            else None
+            if cash is not None and debt is not None and debt > 0 else None
         )
-
         liquid = metrics["cash_plus_short_term_investments"]
         metrics["liquid_assets_to_debt"] = (
             liquid / debt
-            if liquid is not None and debt is not None and debt > 0
-            else None
+            if liquid is not None and debt is not None and debt > 0 else None
         )
 
-        periods = self._period_map(
-            statements,
-            trend_report,
-            bs,
-        )
+        periods = self._period_map(trend_report, bs)
 
         validation = None
+        if validate_secondary:
+            try:
+                sec_provenance = build_sec_validation_provenance(
+                    statements,
+                    trend_report,
+                )
 
-        if yahoo_info is not None:
-            validation_summary = self.yahoo_validation.validate(
-                sec_metrics=metrics,
-                yahoo_info=yahoo_info,
-                sec_periods=periods,
-                yahoo_periods=yahoo_periods,
-            )
-            validation = validation_summary.to_dict()
+                validation = self.cross_validator.validate(
+                    ticker=ticker,
+                    sec_metrics=metrics,
+                    sec_periods=periods,
+                    sec_provenance=sec_provenance,
+                ).to_dict()
+            except Exception as exc:
+                validation = {
+                    "status": "SECONDARY_VALIDATION_ERROR",
+                    "error": str(exc),
+                    "metrics": {},
+                    "confidence": 0.0,
+                }
 
-        validation_metrics = (
-            validation.get("metrics")
-            if validation else None
-        )
+        validation_metrics = validation.get("metrics", {}) if validation else {}
 
         verified = self.verified_builder.build(
             sec_metrics=metrics,
@@ -96,14 +86,11 @@ class PrimaryFinancialEngine:
         )
 
         return {
-            "schema_version": "3.3",
-            "ticker": ticker.upper(),
+            "schema_version": "3.4",
+            "ticker": ticker,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "primary_source": "SEC EDGAR Company Facts / XBRL",
-            "statements": {
-                k: v.to_dict()
-                for k, v in statements.items()
-            },
+            "secondary_source": "Yahoo Finance annual statements",
             "trends": {
                 "metrics": metrics,
                 "warnings": trend_report.warnings,
@@ -112,8 +99,7 @@ class PrimaryFinancialEngine:
             "balance_sheet_snapshot": bs.to_dict(),
             "cross_validation": validation,
             "verified_financials": {
-                k: v.to_dict()
-                for k, v in verified.items()
+                k: v.to_dict() for k, v in verified.items()
             },
         }
 
@@ -123,9 +109,7 @@ class PrimaryFinancialEngine:
         return item.value if item else None
 
     @staticmethod
-    def _period_map(statements, trend_report, bs):
-        periods = {}
-
+    def _period_map(trend_report, bs):
         revenue_period = (
             trend_report.diagnostics
             .get("revenue_period", {})
@@ -133,30 +117,20 @@ class PrimaryFinancialEngine:
             .get("end")
         )
 
-        annual_metrics = {
-            "revenue",
-            "revenue_growth_yoy",
-            "revenue_cagr_3y",
-            "gross_margin",
-            "operating_margin",
-            "net_margin",
-            "operating_income",
-            "net_income",
-            "operating_cash_flow",
-            "capex",
-            "free_cash_flow",
-        }
+        periods = {}
 
-        for metric in annual_metrics:
+        for metric in {
+            "revenue", "revenue_growth_yoy", "revenue_cagr_3y",
+            "gross_margin", "operating_margin", "net_margin",
+            "operating_income", "net_income", "operating_cash_flow",
+            "capex", "free_cash_flow",
+        }:
             periods[metric] = revenue_period
 
         for metric in {
-            "cash",
-            "short_term_investments",
-            "debt",
-            "cash_to_debt",
-            "liquid_assets_to_debt",
+            "cash", "short_term_investments",
             "cash_plus_short_term_investments",
+            "debt", "cash_to_debt", "liquid_assets_to_debt",
         }:
             periods[metric] = bs.anchor_date
 
@@ -172,7 +146,6 @@ class PrimaryFinancialEngine:
         provider = FREDProvider()
         raw = provider.snapshot()
         context = MacroEngine().analyze(raw)
-
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "source": "Federal Reserve Bank of St. Louis FRED",

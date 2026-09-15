@@ -18,53 +18,39 @@ class VerifiedMetric:
 
 
 class VerifiedFinancialBuilder:
-    """
-    Converts SEC + cross-validation output into the facts Baby is allowed
-    to pass downstream.
+    PRIMARY_PRESERVING = {
+        "STRONG_AGREEMENT", "AGREEMENT", "MINOR_DIFFERENCE", "REVIEW",
+        "PRIMARY_ONLY", "PERIOD_MISMATCH",
+        "VALUE_AGREEMENT_PERIOD_UNVERIFIED",
+        "VALUE_DISAGREEMENT_PERIOD_UNVERIFIED",
+        "DEFINITION_MISMATCH", "DEFINITION_UNVERIFIED",
+    }
 
-    MATERIAL_DISAGREEMENT remains unresolved.
-    PRIMARY_ONLY is allowed, but with lower confidence than cross-validated
-    primary evidence.
-    """
-
-    def build(
-        self,
-        sec_metrics: dict,
-        validation: dict | None,
-        periods: dict[str, str | None],
-    ) -> dict[str, VerifiedMetric]:
+    def build(self, sec_metrics, validation, periods):
         output = {}
-
         for metric, sec_value in sec_metrics.items():
-            check = (
-                validation.get(metric)
-                if validation else None
-            )
+            check = validation.get(metric) if validation else None
 
             if check is None:
                 output[metric] = VerifiedMetric(
-                    metric=metric,
-                    value=sec_value,
-                    source="SEC_XBRL",
-                    status="PRIMARY_ONLY" if sec_value is not None else "MISSING",
-                    confidence=0.85 if sec_value is not None else 0.0,
-                    period=periods.get(metric),
-                    evidence={"primary_value": sec_value},
+                    metric, sec_value,
+                    "SEC_XBRL" if sec_value is not None else "none",
+                    "PRIMARY_ONLY" if sec_value is not None else "MISSING",
+                    .85 if sec_value is not None else 0.0,
+                    periods.get(metric),
+                    {"primary_value": sec_value},
                 )
                 continue
 
             status = check.get("status", "UNKNOWN")
-            selected = check.get("selected_value")
 
             if status == "MATERIAL_DISAGREEMENT":
-                value = None
-                source = "unresolved"
-            elif selected is not None:
-                value = selected
-                source = check.get("selected_source", "SEC_XBRL")
+                value, source = None, "unresolved"
+            elif status == "SECONDARY_ONLY":
+                value, source = check.get("secondary_value"), "YAHOO_FINANCE_FALLBACK"
+            elif status in self.PRIMARY_PRESERVING:
+                value, source = sec_value, "SEC_XBRL"
             else:
-                # SEC remains usable when comparison cannot confirm it due
-                # only to secondary-source period uncertainty.
                 value = sec_value
                 source = "SEC_XBRL" if sec_value is not None else "none"
 
@@ -77,5 +63,4 @@ class VerifiedFinancialBuilder:
                 period=periods.get(metric),
                 evidence=check,
             )
-
         return output
