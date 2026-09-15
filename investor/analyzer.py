@@ -294,7 +294,8 @@ class StockAnalyzer:
         financial_health = (
             self.financial_engine
             .analyze(
-                fundamentals
+                fundamentals,
+                primary_financial=primary_financial,
             )
         )
 
@@ -364,6 +365,7 @@ class StockAnalyzer:
                     fundamentals
                 ),
                 risk=risk,
+                primary_financial=primary_financial,
             )
         )
 
