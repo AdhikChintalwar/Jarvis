@@ -136,6 +136,10 @@ class EvidenceBuilder:
                 report.get("catalysts")
             ),
 
+            "event_intelligence": self._serialize(
+                report.get("event_intelligence")
+            ),
+
             "market_context": self._serialize(
                 report.get("market_context")
             ),
@@ -341,6 +345,14 @@ class EvidenceBuilder:
             ["score","confidence","coverage","absolute_valuation_score","growth_adjusted_score","profitability_state","fcf_state","market_data_as_of","financial_period","market_cap","enterprise_value","trailing_pe",
              "price_to_sales","ev_to_sales","price_to_fcf","ev_to_fcf","earnings_yield",
              "fcf_yield","forward_pe","growth_adjusted_pe","positive_signals","red_flags","unknowns"],
+        )
+
+        event_intelligence = evidence.get("event_intelligence", {})
+        compact["event_intelligence"] = self._select(
+            event_intelligence,
+            ["score","confidence","coverage","positive_pressure","negative_pressure",
+             "high_materiality_count","active_event_count","primary_event_count",
+             "secondary_event_count","events","positives","risks","unknowns"],
         )
 
         classification = evidence.get(

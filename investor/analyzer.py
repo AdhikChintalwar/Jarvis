@@ -17,6 +17,7 @@ from investor.financial_engine import (
 )
 from investor.accounting_quality import AccountingQualityEngine
 from investor.valuation_engine import ValuationEngine
+from investor.event_intelligence import EventIntelligenceEngine
 
 from investor.indicators import (
     TechnicalIndicatorEngine,
@@ -113,6 +114,7 @@ class StockAnalyzer:
 
         self.accounting_quality_engine = AccountingQualityEngine()
         self.valuation_engine = ValuationEngine()
+        self.event_intelligence_engine = EventIntelligenceEngine()
 
         self.sec_client = (
             SECClient()
@@ -304,10 +306,10 @@ class StockAnalyzer:
             )
         )
 
-        print("\n[7/12] Analyzing accounting quality...")
+        print("\n[7/13] Analyzing accounting quality...")
         accounting_quality = self.accounting_quality_engine.analyze(primary_financial)
 
-        print("[8/12] Analyzing valuation...")
+        print("[8/13] Analyzing valuation...")
         valuation = self.valuation_engine.analyze(
             market=market,
             fundamentals=fundamentals,
@@ -315,7 +317,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[9/12] Checking SEC filings..."
+            "[9/13] Checking SEC filings..."
         )
 
         try:
@@ -344,8 +346,15 @@ class StockAnalyzer:
                 )
             )
 
+        try:
+            deep_sec = self.deep_sec_engine.analyze(sec_analysis)
+        except Exception as error:
+            print("Deep SEC warning:", error)
+            from investor.sec_filing_analyzer import DeepSECAnalysis
+            deep_sec = DeepSECAnalysis()
+
         print(
-            "[10/12] Checking catalysts..."
+            "[10/13] Checking catalysts and event intelligence..."
         )
 
         news = (
@@ -362,8 +371,14 @@ class StockAnalyzer:
             )
         )
 
+        event_intelligence = self.event_intelligence_engine.analyze(
+            sec_analysis=sec_analysis,
+            news_items=news,
+            deep_sec=deep_sec,
+        )
+
         print(
-            "[11/12] Analyzing market environment..."
+            "[11/13] Analyzing market environment..."
         )
 
         market_context = (
@@ -387,7 +402,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[12/12] Building investment thesis..."
+            "[13/13] Building investment thesis..."
         )
 
         data_quality = (
@@ -490,6 +505,12 @@ class StockAnalyzer:
 
             "sec":
                 sec_analysis,
+
+            "deep_sec":
+                deep_sec,
+
+            "event_intelligence":
+                event_intelligence,
 
             "catalysts":
                 catalyst_analysis,
