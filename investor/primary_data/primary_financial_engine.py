@@ -86,7 +86,7 @@ class PrimaryFinancialEngine:
         )
 
         return {
-            "schema_version": "3.4",
+            "schema_version": "3.5",
             "ticker": ticker,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "primary_source": "SEC EDGAR Company Facts / XBRL",

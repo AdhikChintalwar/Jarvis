@@ -32,6 +32,7 @@ class PrimaryFinancialIntegrationAdapter:
             "revenue_growth": value("revenue_growth_yoy"),
             "gross_margin": value("gross_margin"),
             "operating_margin": value("operating_margin"),
+            "net_income": value("net_income"),
             "profit_margin": value("net_margin"),
             "operating_cash_flow": value("operating_cash_flow"),
             "free_cash_flow": value("free_cash_flow"),
