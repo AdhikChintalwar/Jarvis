@@ -25,6 +25,7 @@ class StockScoringEngine:
         risk: RiskMetrics,
         primary_financial: dict | None = None,
         accounting_quality=None,
+        valuation=None,
     ) -> StockScore:
         components = [
             self._trend_score(technical),
@@ -35,6 +36,7 @@ class StockScoringEngine:
                 primary_financial=primary_financial,
             ),
             self._accounting_quality_score(accounting_quality),
+            self._valuation_score(valuation),
             self._risk_score(risk),
         ]
 
@@ -81,6 +83,7 @@ class StockScoringEngine:
                 else 0.50
             ),
             "accounting_quality": (accounting_quality.confidence / 100.0 if accounting_quality is not None else 0.0),
+            "valuation": (valuation.confidence / 100.0 if valuation is not None else 0.0),
             "risk": 0.90 if risk.overall_risk is not None else 0.0,
         }
 
@@ -254,6 +257,22 @@ class StockScoringEngine:
             score = accounting_quality.score
             explanation = f"Accounting quality score: {score:.0f}/100 with {accounting_quality.coverage:.0f}% evidence coverage."
         return ScoreComponent(name="accounting_quality", score=score, weight=0.10, explanation=explanation)
+
+    def _valuation_score(self, valuation):
+        if valuation is None:
+            score, explanation = 50.0, "Valuation intelligence unavailable."
+        else:
+            score = valuation.score
+            explanation = (
+                f"Valuation score: {score:.0f}/100 with "
+                f"{valuation.coverage:.0f}% evidence coverage."
+            )
+        return ScoreComponent(
+            name="valuation",
+            score=score,
+            weight=0.15,
+            explanation=explanation,
+        )
 
     def _risk_score(self, risk):
         mapping = {

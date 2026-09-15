@@ -110,6 +110,8 @@ class EvidenceBuilder:
 
             "accounting_quality": self._serialize(report.get("accounting_quality")),
 
+            "valuation": self._serialize(report.get("valuation")),
+
             "primary_financial": self._serialize(
                 report.get("primary_financial")
             ),
@@ -332,6 +334,13 @@ class EvidenceBuilder:
              "net_cash","cash_to_debt","shares_change_yoy","operating_margin_change_pp",
              "net_margin_change_pp","fcf_margin_change_pp","diluted_shares_change_yoy",
              "positive_signals","red_flags","unknowns"],
+        )
+
+        compact["valuation"] = self._select(
+            evidence.get("valuation", {}),
+            ["score","confidence","coverage","absolute_valuation_score","growth_adjusted_score","profitability_state","fcf_state","market_data_as_of","financial_period","market_cap","enterprise_value","trailing_pe",
+             "price_to_sales","ev_to_sales","price_to_fcf","ev_to_fcf","earnings_yield",
+             "fcf_yield","forward_pe","growth_adjusted_pe","positive_signals","red_flags","unknowns"],
         )
 
         classification = evidence.get(

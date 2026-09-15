@@ -16,6 +16,7 @@ from investor.financial_engine import (
     FinancialEngine,
 )
 from investor.accounting_quality import AccountingQualityEngine
+from investor.valuation_engine import ValuationEngine
 
 from investor.indicators import (
     TechnicalIndicatorEngine,
@@ -111,6 +112,7 @@ class StockAnalyzer:
         )
 
         self.accounting_quality_engine = AccountingQualityEngine()
+        self.valuation_engine = ValuationEngine()
 
         self.sec_client = (
             SECClient()
@@ -302,11 +304,18 @@ class StockAnalyzer:
             )
         )
 
-        print("\n[7/11] Analyzing accounting quality...")
+        print("\n[7/12] Analyzing accounting quality...")
         accounting_quality = self.accounting_quality_engine.analyze(primary_financial)
 
+        print("[8/12] Analyzing valuation...")
+        valuation = self.valuation_engine.analyze(
+            market=market,
+            fundamentals=fundamentals,
+            primary_financial=primary_financial,
+        )
+
         print(
-            "[8/11] Checking SEC filings..."
+            "[9/12] Checking SEC filings..."
         )
 
         try:
@@ -336,7 +345,7 @@ class StockAnalyzer:
             )
 
         print(
-            "[9/11] Checking catalysts..."
+            "[10/12] Checking catalysts..."
         )
 
         news = (
@@ -354,7 +363,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[10/11] Analyzing market environment..."
+            "[11/12] Analyzing market environment..."
         )
 
         market_context = (
@@ -373,11 +382,12 @@ class StockAnalyzer:
                 risk=risk,
                 primary_financial=primary_financial,
                 accounting_quality=accounting_quality,
+                valuation=valuation,
             )
         )
 
         print(
-            "[11/11] Building investment thesis..."
+            "[12/12] Building investment thesis..."
         )
 
         data_quality = (
@@ -474,6 +484,9 @@ class StockAnalyzer:
 
             "accounting_quality":
                 accounting_quality,
+
+            "valuation":
+                valuation,
 
             "sec":
                 sec_analysis,
