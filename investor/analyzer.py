@@ -18,6 +18,7 @@ from investor.financial_engine import (
 from investor.accounting_quality import AccountingQualityEngine
 from investor.valuation_engine import ValuationEngine
 from investor.event_intelligence import EventIntelligenceEngine
+from investor.macro_regime import MacroRegimeEngine
 
 from investor.indicators import (
     TechnicalIndicatorEngine,
@@ -115,6 +116,7 @@ class StockAnalyzer:
         self.accounting_quality_engine = AccountingQualityEngine()
         self.valuation_engine = ValuationEngine()
         self.event_intelligence_engine = EventIntelligenceEngine()
+        self.macro_regime_engine = MacroRegimeEngine()
 
         self.sec_client = (
             SECClient()
@@ -306,10 +308,10 @@ class StockAnalyzer:
             )
         )
 
-        print("\n[7/13] Analyzing accounting quality...")
+        print("\n[7/14] Analyzing accounting quality...")
         accounting_quality = self.accounting_quality_engine.analyze(primary_financial)
 
-        print("[8/13] Analyzing valuation...")
+        print("[8/14] Analyzing valuation...")
         valuation = self.valuation_engine.analyze(
             market=market,
             fundamentals=fundamentals,
@@ -317,7 +319,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[9/13] Checking SEC filings..."
+            "[9/14] Checking SEC filings..."
         )
 
         try:
@@ -354,7 +356,7 @@ class StockAnalyzer:
             deep_sec = DeepSECAnalysis()
 
         print(
-            "[10/13] Checking catalysts and event intelligence..."
+            "[10/14] Checking catalysts and event intelligence..."
         )
 
         news = (
@@ -378,12 +380,22 @@ class StockAnalyzer:
         )
 
         print(
-            "[11/13] Analyzing market environment..."
+            "[11/14] Analyzing market environment..."
         )
 
         market_context = (
             self.market_context_engine
             .analyze()
+        )
+
+        print(
+            "[12/14] Analyzing macro and market regime..."
+        )
+
+        macro_regime = self.macro_regime_engine.analyze()
+
+        print(
+            "[13/14] Finalizing deterministic evidence..."
         )
 
         score = (
@@ -402,7 +414,7 @@ class StockAnalyzer:
         )
 
         print(
-            "[13/13] Building investment thesis..."
+            "[14/14] Building investment thesis..."
         )
 
         data_quality = (
@@ -517,6 +529,9 @@ class StockAnalyzer:
 
             "market_context":
                 market_context,
+
+            "macro_regime":
+                macro_regime,
 
             "data_quality":
                 data_quality,

@@ -1,0 +1,44 @@
+BABY INVESTOR V4.0.1 — Primary Macro Semantics + Cached Macro Snapshot
+
+Changes from V4.0
+-----------------
+1. CPI semantics corrected:
+   - CPIAUCSL is no longer treated as 'inflation rising' merely because the index rises.
+   - Calculates CPI YoY inflation.
+   - Calculates CPI MoM inflation.
+   - Compares current YoY inflation with YoY inflation three months earlier.
+   - Classifies inflation as accelerating / cooling / stable / available / unknown.
+
+2. Fed policy:
+   - Uses FRED DFF (Effective Federal Funds Rate) instead of monthly FEDFUNDS.
+   - Missing data remains UNKNOWN.
+
+3. Labor:
+   - Uses FRED UNRATE.
+   - Computes change over three monthly observations in percentage points.
+   - Classifies improving / stable / weakening.
+
+4. Treasury curve:
+   - Uses primary FRED DGS2 and DGS10.
+   - Computes 2Y-10Y spread in basis points.
+   - Classifies normal / flat / inverted.
+   - 10Y trend uses basis-point change rather than percent change of a yield.
+
+5. Macro snapshot cache:
+   - 30-minute in-process TTL by default.
+   - AAPL / SLDE / CRWD in one Python process receive the same macro snapshot.
+   - Prevents repeated FRED calls and ticker-to-ticker transient inconsistency.
+
+6. Scoring safety:
+   - Macro remains evidence-only in V4.0.1.
+   - It still does NOT change the individual stock score.
+   - Missing observations remain neutral.
+
+Sources / authority
+-------------------
+FRED primary observations: 0.98 authority
+Yahoo SPY/QQQ/IWM/VIX market proxies: 0.70 authority
+
+Required .env
+-------------
+FRED_API_KEY=<actual key>

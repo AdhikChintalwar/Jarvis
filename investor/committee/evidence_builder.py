@@ -144,6 +144,10 @@ class EvidenceBuilder:
                 report.get("market_context")
             ),
 
+            "macro_regime": self._serialize(
+                report.get("macro_regime")
+            ),
+
             "data_quality": self._serialize(
                 report.get("data_quality")
             ),
@@ -353,6 +357,15 @@ class EvidenceBuilder:
             ["score","confidence","coverage","positive_pressure","negative_pressure",
              "high_materiality_count","active_event_count","primary_event_count",
              "secondary_event_count","events","positives","risks","unknowns"],
+        )
+
+        macro_regime = evidence.get("macro_regime", {})
+        compact["macro_regime"] = self._select(
+            macro_regime,
+            ["regime","score","confidence","coverage","financial_conditions",
+             "volatility_regime","equity_regime","rate_regime","inflation_regime",
+             "labor_regime","fed_policy_state","observations","positives","risks","unknowns",
+             "generated_at"],
         )
 
         classification = evidence.get(
