@@ -1,0 +1,27 @@
+BABY INVESTOR V5.0 — POINT-IN-TIME RESEARCH & BACKTESTING FOUNDATION
+
+New architecture
+investor/point_in_time/
+  models.py          immutable evidence/snapshot/backtest contracts
+  availability.py    no-lookahead availability policy
+  snapshot_store.py  SQLite historical research snapshots
+  universe.py        dated universe membership / survivorship guard
+  engine.py          point-in-time research snapshot builder
+  backtest.py        next-bar execution research backtester
+
+Core invariants
+- Fundamental evidence requires available_at <= simulated decision time.
+- Period end alone NEVER makes a filing historically available.
+- Future evidence is blocked and audited.
+- Point-in-time universe membership is required.
+- Signals generated on bar t execute on the next available bar.
+- Transaction costs reduce cash/equity.
+- Backtest reports requested vs actual dates.
+- V5.0 does NOT pretend today's SEC Company Facts endpoint is a historical archive.
+- Real historical filings must be reconstructed from filing timestamps before Baby's
+  deterministic DecisionEngine can be honestly replayed point-in-time.
+- AI scoring authority remains 0%.
+- AI execution authority remains 0%.
+
+This is the infrastructure layer. V5.1 should build SEC filing-time reconstruction and
+historical market/universe adapters on top of these contracts.
