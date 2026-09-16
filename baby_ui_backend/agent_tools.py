@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Any
 from .alpaca_market import AlpacaMarketScreener
 from .v10_intelligence import V10IntelligenceService
+from .intelligence import V106IntelligencePlatform
+from .v11 import V11InvestmentPlatform
 
 class BabyReadOnlyTools:
     """Read-only tool registry for Baby V9. No broker/order functions are exposed here."""
     def __init__(self, report_dir: Path):
-        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir)
+        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir); self.v106=V106IntelligencePlatform(); self.v11=V11InvestmentPlatform()
 
     def schemas(self)->list[dict[str,Any]]:
         return [
@@ -23,6 +25,7 @@ class BabyReadOnlyTools:
           {'name':'screen_price','description':'Deterministically screen active/tradable US equities by current price range.','args':{'min_price':'number','max_price':'number','limit':'integer'}},
           {'name':'get_baby_capabilities','description':'Describe Baby authority boundaries and available research tools.','args':{}},
           {'name':'get_full_investment_flow','description':'Get Baby deterministic full research-to-trade flow including decision, risk, trade setup, entry/invalidation/targets and exit policy.','args':{'symbol_or_company':'string'}},
+          {'name':'get_v11_analysis','description':'Get Baby V11 deterministic unified thesis, bull/bear evidence, expectations, decision intelligence and trade context.','args':{'symbol_or_company':'string'}},
           {'name':'get_trade_plan','description':'Get Baby production trade plan and deterministic exit policy for a researched symbol.','args':{'symbol_or_company':'string'}},
         ]
 
@@ -89,6 +92,11 @@ class BabyReadOnlyTools:
         if name=='screen_price': return self.market.filter_price(float(args['min_price']),float(args['max_price']),int(args.get('limit') or 100))
         if name=='get_full_investment_flow':
             sym=self._resolve(str(args.get('symbol_or_company') or '')); q=self._validate_quote(self.market.current_quote(sym)); return self.v10.full_flow(sym,quote=q)
+        if name=='get_v11_analysis':
+            sym=self._resolve(str(args.get('symbol_or_company') or '')); r=self.v10.load(sym)
+            if r.get('status')=='NOT_RESEARCHED': return {'symbol':sym,'status':'NOT_RESEARCHED'}
+            q=self._validate_quote(self.market.current_quote(sym)); flow=self.v10.full_flow(sym,quote=q); v106=self.v106.build(sym,r)
+            return self.v11.build(sym,r,v106,flow,record=False)
         if name=='get_trade_plan':
             sym=self._resolve(str(args.get('symbol_or_company') or '')); r=self.v10.load(sym); return {'symbol':sym,'trade_plan':r.get('trade_plan') if r.get('status')!='NOT_RESEARCHED' else None,'exit_policy':self.v10.exit_policy(r) if r.get('status')!='NOT_RESEARCHED' else None,'source':'Baby deterministic production research','authority':'DETERMINISTIC'}
         if name=='get_baby_capabilities': return {'name':'Baby','scope':['general conversation','investment education','current market quotes','market/company news','Baby production research','deterministic screening','full research-to-trade flow','deterministic entry/invalidation/targets','deterministic exit policy'],'authority':{'market_facts':'verified tool data','research_scores':'Baby deterministic engines','trade_levels':'Baby TradePlanAgent','AI_scoring_authority':'0%','chat_execution_authority':'NONE','real_money_execution':'DISABLED'},'limitations':['IEX is not consolidated SIP','news availability depends on Alpaca entitlement','missing evidence remains UNKNOWN','entry/exit levels are research/paper-trading scenarios until explicitly paper-executed']}

@@ -306,6 +306,22 @@ def build_fundamentals(symbol, facts, *, not_applicable_reason=None):
     ny, nn, np = _yoy(facts, CONCEPTS['net_income'])
     oy, on, op = _yoy(facts, CONCEPTS['ocf'])
 
+    # V11.0.1: reconstruct annual FCF growth only from OCF/CapEx facts that share
+    # the same economic period. Never compare independently selected stale aliases.
+    def annual_fcf_series():
+        ocfs = {r.get('end'): r for r in _annual_series(facts, CONCEPTS['ocf'])}
+        caps = {r.get('end'): r for r in _annual_series(facts, CONCEPTS['capex'])}
+        out = []
+        for end in sorted(set(ocfs) & set(caps)):
+            o, c = ocfs[end], caps[end]
+            if o.get('start') != c.get('start'):
+                continue
+            out.append({'end': end, 'val': o['val'] - abs(c['val']), 'ocf': o, 'capex': c})
+        return out
+
+    af = annual_fcf_series()
+    fcf_growth = pct(af[-1]['val'], af[-2]['val']) if len(af) >= 2 else None
+
     def dm(k, label):
         return metric(k, label, dv(k), inputs=_resolver_inputs(d.get(k)), evidence=_evs(d.get(k)))
 
@@ -325,6 +341,7 @@ def build_fundamentals(symbol, facts, *, not_applicable_reason=None):
         metric('net_income_growth_yoy', 'Net Income Growth YoY', ny, unit='%', evidence=_ev(nn) + _ev(np)),
         dm('ocf', 'Operating Cash Flow (TTM/FY)'),
         metric('ocf_growth_yoy', 'OCF Growth YoY', oy, unit='%', evidence=_ev(on) + _ev(op)),
+        metric('fcf_growth_yoy', 'Free Cash Flow Growth YoY', fcf_growth, unit='%', formula='Aligned annual FCF / prior aligned annual FCF - 1', inputs={'latest_period': af[-1]['end'] if len(af)>=1 else None, 'prior_period': af[-2]['end'] if len(af)>=2 else None}, evidence=(_ev(af[-1]['ocf']) + _ev(af[-1]['capex']) + _ev(af[-2]['ocf']) + _ev(af[-2]['capex'])) if len(af)>=2 else []),
         dm('capex', 'Capital Expenditure (TTM/FY)'),
         metric('fcf', 'Free Cash Flow (aligned)', fcf, formula='Aligned OCF - abs(Aligned CapEx)', inputs=fcf_inputs, evidence=_evs(d.get('ocf')) + _evs(d.get('capex')), status='PASS' if fcf is not None else 'INVALID_PERIOD_ALIGNMENT' if None not in (ocf, capex) else 'UNKNOWN'),
         metric('cash', 'Cash', iv('cash'), inputs=_resolver_inputs(i.get('cash')), evidence=_evs(i.get('cash'))),

@@ -232,6 +232,8 @@ from .v10_intelligence import V10IntelligenceService
 from .intelligence import V106IntelligencePlatform
 v10_intelligence=V10IntelligenceService(REPORT_DIR)
 v106_intelligence=V106IntelligencePlatform()
+from .v11 import V11InvestmentPlatform
+v11_platform=V11InvestmentPlatform()
 
 def _v10_build_full_flow(symbol:str, *, force:bool=False):
     symbol=symbol.upper()
@@ -307,3 +309,20 @@ def v106_research_intelligence(symbol:str,auto_research:bool=True,force:bool=Fal
     research=json.loads(p.read_text())
     try:return v106_intelligence.build(symbol,research)
     except Exception as e:raise HTTPException(503,detail={'status':'INTELLIGENCE_FAILED','symbol':symbol,'error':str(e)})
+
+
+# --- V11 Unified Thesis & Decision Intelligence --------------------------------
+@app.get('/api/v11/research/{symbol}/analysis')
+def v11_analysis(symbol:str,auto_research:bool=True,force:bool=False,record:bool=False):
+    flow=_v10_build_full_flow(symbol,force=force) if auto_research else v10_intelligence.full_flow(symbol.upper(),quote=execution_quote_service.get(symbol.upper()),portfolio=_paper_snapshot_with_quotes())
+    if flow.get('status')!='READY': raise HTTPException(409,detail=flow)
+    research=json.loads((REPORT_DIR/f'{symbol.upper()}.json').read_text())
+    v106=flow.get('intelligence_v106') or v106_intelligence.build(symbol.upper(),research)
+    return v11_platform.build(symbol.upper(),research,v106,flow,record=record)
+
+@app.post('/api/v11/research/{symbol}/run')
+def v11_run(symbol:str,force:bool=False,record:bool=True):
+    flow=_v10_build_full_flow(symbol,force=force)
+    research=json.loads((REPORT_DIR/f'{symbol.upper()}.json').read_text())
+    v106=flow.get('intelligence_v106') or v106_intelligence.build(symbol.upper(),research)
+    return v11_platform.build(symbol.upper(),research,v106,flow,record=record)
