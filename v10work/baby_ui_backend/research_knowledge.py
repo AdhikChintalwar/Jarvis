@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+STAGE_KNOWLEDGE = {
+'data': dict(what='Collects the evidence packet used by every later research stage.', why='A decision is only as reliable as its inputs. Baby keeps source, authority and as-of information separate from derived calculations.', checks=['SEC/XBRL financial facts','market-price/history availability','macro evidence','source freshness and missing fields'], result='PASS means the production evidence packet loaded. UNKNOWN means required evidence was not exported; it is not treated as bearish.'),
+'financials': dict(what='Measures the company’s operating and balance-sheet health from primary financial evidence.', why='Revenue, earnings, cash generation and leverage describe whether the underlying business can support its valuation and risk.', checks=['Revenue and growth','Net income','Operating cash flow (OCF)','Free cash flow (FCF)','Cash','Debt'], result='Higher quality supports the research score. Missing evidence remains UNKNOWN rather than receiving a negative score.'),
+'accounting': dict(what='Looks for the quality and consistency of reported financial results.', why='Strong headline earnings can be less useful when cash conversion, accruals or balance-sheet relationships are weak.', checks=['cash conversion','earnings/FCF consistency','accrual-related signals','balance-sheet consistency'], result='This is an evidence-quality assessment, not an accusation of accounting misconduct.'),
+'valuation': dict(what='Measures how demanding the market price is relative to deterministic valuation evidence.', why='A strong company can still offer poor prospective value when the price already assumes aggressive outcomes.', checks=['available valuation multiples','cash-flow/value relationships','growth assumptions','valuation classification'], result='A low valuation score means the price looks demanding under Baby’s current inputs; it is not a prediction that price must fall.'),
+'technical': dict(what='Describes price trend, momentum and volatility from historical market bars.', why='Technical structure helps Baby construct research entry/invalidation scenarios without overriding fundamentals or risk.', checks=['SMA20/50/200','EMA20','RSI14','ATR14','price structure'], result='Technical PASS means the calculations are available/valid, not that the stock is automatically a buy.'),
+'liquidity': dict(what='Checks whether trading activity and volatility make a position practical to enter, size and exit.', why='Thin liquidity can create slippage and make apparently attractive setups difficult to execute.', checks=['volume','relative volume','volatility/liquidity evidence'], result='Liquidity contributes to execution/risk context; it does not replace the investment thesis.'),
+'sec': dict(what='Reviews SEC/corporate-event evidence available to the production pipeline.', why='Filings can change the thesis through financing, dilution, material events or other disclosures.', checks=['available SEC filing context','corporate-event evidence','filing semantics'], result='UNKNOWN means this stage lacks exported evidence. Registration language is not automatically treated as completed dilution.'),
+'macro': dict(what='Adds the broader economic and market regime around the company.', why='Rates, inflation, growth and market regime can affect discount rates, risk appetite and sector behavior.', checks=['available FRED/macro evidence','market regime','macro score'], result='Macro context modifies research context; it is not allowed to fabricate company facts.'),
+'risk': dict(what='Combines deterministic risk evidence and applies hard safety overrides when necessary.', why='A promising setup should not bypass extreme volatility, evidence problems or other hard constraints.', checks=['risk score/level','hard overrides','position-risk multiplier'], result='Risk can constrain the research state and reduce position size. Hard overrides cannot be bypassed by technical strength.'),
+'validation': dict(what='Cross-checks Baby’s primary/derived evidence against an independent provider.', why='Independent agreement catches stale data, calculation mistakes and provider/concept differences.', checks=['financial cross-checks','price/indicator reconciliation','coverage','PASS/REVIEW/FAIL/UNKNOWN'], result='Independent data validates but never overwrites authoritative SEC/XBRL evidence. Concept mismatches can be REVIEW rather than FAIL.'),
+'decision': dict(what='Combines available deterministic research components into Baby’s research score and state.', why='This creates one auditable research summary while preserving evidence confidence, coverage, constraints and unknowns.', checks=['Financial Health 20%','Accounting Quality 12%','Valuation 15%','Event Intelligence 10%','Macro Regime 8%','Advanced Market 15%','Unified Risk Quality 20%'], result='TOP_RESEARCH/CANDIDATE/WATCH/WAIT/AVOID are research states, not automatic buy/sell orders. Missing components are omitted rather than scored bearish.'),
+'trade': dict(what='Builds deterministic pullback and breakout research scenarios from price structure, ATR, decision state and risk.', why='It separates “interesting stock” from “valid setup right now.”', checks=['pullback zone','breakout trigger','invalidation','targets','risk/reward','position sizing'], result='Only a valid current setup can become a paper-order proposal. WAIT_FOR_PULLBACK_OR_BREAKOUT means no current trigger.'),
+'portfolio': dict(what='Measures how a proposed position would affect the portfolio.', why='A good single-stock idea can still create excessive concentration or correlated risk.', checks=['position size','portfolio exposure','cash/buying power','concentration constraints'], result='UNKNOWN means portfolio-impact evidence has not been produced for this research snapshot.'),
+'history': dict(what='Evaluates the research process against point-in-time historical evidence and out-of-sample tests.', why='Historical validation helps detect look-ahead bias, overfitting and strategies that merely mimic market exposure.', checks=['point-in-time evidence','next-bar execution','walk-forward/OOS','benchmarks','survivorship status'], result='Historical performance is evidence about a process, not a guarantee of future returns. Survivorship limitations must stay visible.'),
+}
+
+STATUS_LEGEND = {
+'PASS':'Evidence/calculation passed the stage check. PASS does not mean BUY.',
+'REVIEW':'Usable evidence exists but a discrepancy, concept difference or caution needs review.',
+'FAIL':'A defined validation/risk check failed. Inspect the evidence before relying on the stage.',
+'UNKNOWN':'Baby does not have enough supported evidence for this item. UNKNOWN is not bearish.',
+'CONFLICT':'Supported sources disagree materially and the disagreement has not been resolved.',
+'STALE':'Evidence exists but is older than the freshness policy allows.',
+}
+
+ABBREVIATIONS = {
+'OCF':'Operating Cash Flow','FCF':'Free Cash Flow','CapEx':'Capital Expenditures','SMA':'Simple Moving Average','EMA':'Exponential Moving Average','RSI':'Relative Strength Index','ATR':'Average True Range','RVOL':'Relative Volume','SEC':'U.S. Securities and Exchange Commission','XBRL':'eXtensible Business Reporting Language','PIT':'Point-in-Time','OOS':'Out-of-Sample','R/R':'Reward-to-Risk ratio','TTM':'Trailing Twelve Months','YoY':'Year over Year'
+}
+
+def stage_explanation(stage_id:str, stage:dict|None=None)->dict:
+    base=dict(STAGE_KNOWLEDGE.get(stage_id,{}))
+    base['id']=stage_id
+    if stage:
+        base['current']={'status':stage.get('status'),'score':stage.get('score'),'summary':stage.get('summary'),'positives':stage.get('positives') or [],'negatives':stage.get('negatives') or [],'unknowns':stage.get('unknowns') or [],'conflicts':stage.get('conflicts') or []}
+        base['metrics']=stage.get('metrics') or []
+    return base
