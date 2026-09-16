@@ -1,0 +1,28 @@
+BABY INVESTOR V6.5 — FULLER POINT-IN-TIME HISTORICAL REPLAY
+
+Adds:
+- period-aware SEC financial resolver
+- FCF requires matching start AND end
+- like-duration revenue YoY
+- safe debt aggregation
+- PIT historical technical indicators and realized volatility
+- PIT liquidity from historical dollar volume
+- ALFRED/FRED real-time-period macro adapter
+- deterministic FinancialHealth + AccountingQuality + Valuation + Market + Macro
+  + UnifiedRisk + DecisionEngine replay
+- real AAPL/CRWD historical replay gate
+
+Integrity:
+- AI scoring authority 0%; AI execution authority 0%.
+- No current-data fallback inside PIT market engine.
+- Yahoo/yfinance is explicitly secondary/prototype historical OHLCV in the real gate.
+- FRED macro requests set realtime_start=realtime_end=historical as-of date so
+  revised future values do not leak backward.
+- Event Intelligence is only included when historically filtered SEC analysis is
+  explicitly supplied. It is not fabricated.
+- Historical universe/delisting source is STILL unresolved; broad-market backtests
+  must remain survivorship_status=INCOMPLETE.
+- Real-money execution remains disabled.
+
+Run:
+python investor_v6_5_release_gate.py
