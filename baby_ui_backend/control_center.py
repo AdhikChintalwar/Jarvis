@@ -47,15 +47,10 @@ def _rows(path:Path,table:str,limit=100):
     except Exception:return []
 
 def paper_portfolio():
-    candidates=[Path('data/baby_paper_trading.db'),Path('data/paper_trading.db')]
-    p=next((x for x in candidates if x.exists()),candidates[0])
-    tables=_sqlite_tables(p)
-    payload={'status':'READY' if tables else 'NOT_AVAILABLE','database':str(p),'tables':tables,'real_money_execution':'DISABLED'}
-    for t in tables:
-        low=t.lower()
-        if any(x in low for x in ('position','order','fill','trade','account','portfolio')):
-            payload[t]=_rows(p,t,100)
-    return payload
+    # V8.3 uses PaperTradingService in app.py. This compatibility helper only
+    # reports whether the persistent database exists; it never fabricates data.
+    p=Path('data/baby_paper_trading.db')
+    return {'status':'READY' if p.exists() else 'NOT_AVAILABLE','database':str(p),'real_money_execution':'DISABLED'}
 
 def automations():
     p=Path('data/baby_automations.db'); tables=_sqlite_tables(p)
@@ -77,4 +72,4 @@ def scanner():
 
 def system_status():
     paths={'research':'data/ui_research','alerts':'data/baby_ui.db','automations':'data/baby_automations.db','paper':'data/baby_paper_trading.db','validation':'data/v7_5_real_investment_test.json'}
-    return {'status':'ok','version':'8.2.0','time':datetime.now(timezone.utc).isoformat(),'ai_scoring_authority':0.0,'ai_execution_authority':0.0,'real_money_execution':'DISABLED','components':{k:{'path':v,'available':Path(v).exists()} for k,v in paths.items()}}
+    return {'status':'ok','version':'8.3.0','time':datetime.now(timezone.utc).isoformat(),'ai_scoring_authority':0.0,'ai_execution_authority':0.0,'real_money_execution':'DISABLED','components':{k:{'path':v,'available':Path(v).exists()} for k,v in paths.items()}}

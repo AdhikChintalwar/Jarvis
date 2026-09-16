@@ -8,6 +8,8 @@ export const api={
  control:()=>fetch('/api/control/status').then(r=>r.json()),
  backtest:()=>fetch('/api/backtests/v7_5').then(r=>r.json()),
  paper:()=>fetch('/api/portfolio/paper').then(r=>r.json()),
+ paperOrder:p=>fetch('/api/portfolio/paper/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ executePaperOrder:id=>fetch(`/api/portfolio/paper/orders/${id}/execute`,{method:'POST'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  automations:()=>fetch('/api/automations').then(r=>r.json()),
  scanner:()=>fetch('/api/scanner/latest').then(r=>r.json()),
 };
