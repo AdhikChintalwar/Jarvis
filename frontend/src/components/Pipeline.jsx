@@ -1,0 +1,2 @@
+import React from 'react';
+export default function Pipeline({stages,active,onSelect}){return <div className="pipeline">{stages.map((s,i)=><React.Fragment key={s.id}><button className={`pipe ${active===s.id?'active':''} status-${s.status?.toLowerCase()}`} onClick={()=>onSelect(s.id)}><span>{String(i+1).padStart(2,'0')}</span><b>{s.label}</b><small>{s.score!=null?`${Number(s.score).toFixed(1)} / 100`:s.status}</small></button>{i<stages.length-1&&<div className="arrow">↓</div>}</React.Fragment>)}</div>}
