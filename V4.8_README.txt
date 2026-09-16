@@ -1,0 +1,46 @@
+BABY INVESTOR V4.8 — INDEPENDENT PROVIDER + CROSS-SOURCE VALIDATION
+
+BASELINE
+V4.7.1 deterministic Decision + Validation + Trade Research foundation.
+
+NEW
+- AlphaVantageProvider, loaded from local .env.
+- Accepted env names:
+    ALPHA_VANTAGE_API_KEY
+    ALPHAVANTAGE_API_KEY
+- Automatic independent validation in BabyInvestmentSystem.
+- TIME_SERIES_DAILY compact market cross-check.
+- Latest annual INCOME_STATEMENT, BALANCE_SHEET, CASH_FLOW cross-check.
+- Independent current price, SMA20, SMA50, EMA20, RSI14.
+- Independent revenue, net income, OCF, FCF, cash, debt.
+- Disk cache under data/provider_cache/alpha_vantage.
+- Market TTL 6h; fundamentals TTL 7d.
+- Provider failures degrade to UNKNOWN; they do not change the deterministic decision.
+- External packets MUST explicitly set independent=True.
+- Validation now exposes coverage separately from score.
+- AI scoring authority remains 0%.
+- Execution authority remains NONE.
+
+AUTHORITY
+SEC/XBRL: PRIMARY financial truth.
+FRED: PRIMARY macro truth.
+Yahoo/yfinance: SECONDARY/prototype market feed.
+Alpha Vantage: INDEPENDENT_SECONDARY validation.
+Nemotron: RESEARCH_RED_TEAM_ONLY, 0% scoring authority.
+
+IMPORTANT
+A disagreement is not resolved by averaging providers. Baby surfaces REVIEW/FAIL and preserves the primary value.
+
+API USE
+One uncached symbol uses up to four Alpha Vantage calls:
+TIME_SERIES_DAILY, INCOME_STATEMENT, BALANCE_SHEET, CASH_FLOW.
+Caching prevents repeated test runs from unnecessarily consuming quota.
+
+TEST
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_8_contract_test.py
+python investor_v4_8_real_test.py AAPL SLDE CRWD
+
+Do not tag V4.8 until all tests pass live.

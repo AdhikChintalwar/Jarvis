@@ -1,0 +1,27 @@
+BABY INVESTOR V4.8.3 — FINAL COMPATIBILITY HARDENING
+
+Purpose
+Eliminate the repeated synthetic-fixture crashes caused by legacy TradePlanBuilder
+technical attributes being absent.
+
+Changes
+- Complete legacy technical compatibility adapter.
+- Dynamically tested against every technical.<field> dependency in trade_plan.py.
+- Derives ATR14, SMA20/50/200, EMA20/50/200, RSI14 when possible.
+- Derives distance_from_ema20_pct.
+- Conservative neutral compatibility defaults prevent incomplete packets from crashing.
+- Analyzer's original technical object is never mutated.
+- V4.8.2 concept-aware cash/debt validation unchanged.
+- V4.8.1 Alpha Vantage rate/caching/retry behavior unchanged.
+- AI scoring authority remains 0%.
+- Execution authority remains NONE.
+
+FINAL RELEASE GATE
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_8_contract_test.py
+python investor_v4_8_1_contract_test.py
+python investor_v4_8_2_contract_test.py
+python investor_v4_8_3_contract_test.py
+python investor_v4_8_real_test.py AAPL SLDE CRWD

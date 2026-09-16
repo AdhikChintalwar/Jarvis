@@ -24,7 +24,7 @@ class DecisionReport:
     constraints: list[str] = field(default_factory=list)
     unknowns: list[str] = field(default_factory=list)
     generated_at: str = ""
-    schema_version: str = "4.7"
+    schema_version: str = "4.8"
 
 class DecisionEngine:
     """Deterministic investment-attractiveness authority.

@@ -48,7 +48,7 @@ assert m["primary.cash"]=="REVIEW"
 assert m["technical.sma_20"]=="PASS" and m["technical.sma_50"]=="PASS"
 
 # External disagreement must surface, not overwrite primary.
-vr2=ValidationEngine().validate(vreport,hist,{"source":"independent_test","revenue":200})
+vr2=ValidationEngine().validate(vreport,hist,{"source":"independent_test","independent":True,"status":"ACTIVE","revenue":200})
 assert any(x["name"]=="external.revenue" and x["status"]=="FAIL" for x in vr2.checks)
 
 print("V4.7 stabilization contract: PASS")

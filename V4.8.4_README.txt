@@ -1,0 +1,24 @@
+BABY INVESTOR V4.8.4 — FINAL COMPATIBILITY BOUNDARY HARDENING
+
+Fix
+- Normalizes BOTH legacy technical and legacy risk packets before TradePlanBuilder.
+- Dynamically regression-tests every technical.* and risk.* attribute consumed by trade_plan.py.
+- Missing legacy annualized_volatility no longer crashes synthetic/incomplete packets.
+- Compatibility defaults do NOT alter UnifiedRiskEngine, hard-risk overrides, DecisionEngine,
+  AI authority, or execution authority.
+- V4.8.3 technical hardening retained.
+- V4.8.2 concept-aware financial validation retained.
+- V4.8.1 Alpha Vantage rate/caching/retry behavior retained.
+- AI scoring authority = 0%.
+- Execution authority = NONE.
+
+RELEASE GATE
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_8_contract_test.py
+python investor_v4_8_1_contract_test.py
+python investor_v4_8_2_contract_test.py
+python investor_v4_8_3_contract_test.py
+python investor_v4_8_4_contract_test.py
+python investor_v4_8_real_test.py AAPL SLDE CRWD

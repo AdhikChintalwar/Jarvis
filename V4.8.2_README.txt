@@ -1,0 +1,25 @@
+BABY INVESTOR V4.8.2 — FINAL PROVIDER STABILIZATION
+
+Changes
+- Complete legacy technical compatibility adapter.
+- Missing EMA50/SMA200/EMA200/ATR14 are deterministically derived when possible.
+- Analyzer technical object is not mutated.
+- Cash/debt cross-source disagreement is concept-aware.
+- Material cash/debt differences become REVIEW / CONCEPT_MISMATCH_MATERIAL.
+- SEC/XBRL PRIMARY authority is preserved.
+- Revenue/net income/OCF/FCF remain strict numeric cross-source checks.
+- CRWD RSI disagreement remains strict; no tolerance widening.
+- Alpha Vantage rate spacing/retry/cache behavior from V4.8.1 remains.
+- AI scoring authority remains 0%.
+- Execution authority remains NONE.
+
+FULL GATE
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_8_contract_test.py
+python investor_v4_8_1_contract_test.py
+python investor_v4_8_2_contract_test.py
+python investor_v4_8_real_test.py AAPL SLDE CRWD
+
+Tag only after every contract and the real test pass.

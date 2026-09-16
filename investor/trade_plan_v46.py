@@ -55,6 +55,148 @@ class TradePlanAgent:
     def __init__(self):
         self.structure=TradePlanEngine(); self.sizer=PositionSizingEngine()
 
+    @staticmethod
+    def _legacy_technical_adapter(technical, history, atr):
+        """Complete compatibility packet for the legacy TradePlanBuilder.
+
+        Every technical attribute consumed by the legacy builder is populated.
+        Deterministically derivable values come from the supplied OHLC history.
+        Non-derivable optional values receive conservative neutral defaults so a
+        synthetic/incomplete packet cannot crash trade-plan research.
+
+        This adapter is compatibility-only: it does not alter DecisionEngine,
+        ValidationEngine, scoring authority, or the analyzer's source object.
+        """
+        if isinstance(technical, dict):
+            td = dict(technical)
+        elif hasattr(technical, "__dict__"):
+            td = dict(vars(technical))
+        else:
+            td = {}
+
+        h = history.copy()
+        if isinstance(h.columns, pd.MultiIndex):
+            h.columns = [str(c[0]) for c in h.columns]
+        cmap = {str(c).strip().lower(): c for c in h.columns}
+        close_col = cmap.get("close")
+        close = (
+            pd.to_numeric(h[close_col], errors="coerce").dropna()
+            if close_col is not None else pd.Series(dtype=float)
+        )
+
+        def sma(n):
+            return float(close.tail(n).mean()) if len(close) >= n else None
+
+        def ema(n):
+            return (
+                float(close.ewm(span=n, adjust=False).mean().iloc[-1])
+                if len(close) >= n else None
+            )
+
+        def rsi14():
+            if len(close) < 15:
+                return None
+            d = close.diff()
+            gain = d.clip(lower=0)
+            loss = -d.clip(upper=0)
+            ag = gain.ewm(alpha=1/14, adjust=False, min_periods=14).mean()
+            al = loss.ewm(alpha=1/14, adjust=False, min_periods=14).mean()
+            if pd.isna(ag.iloc[-1]) or pd.isna(al.iloc[-1]):
+                return None
+            if al.iloc[-1] == 0:
+                return 100.0 if ag.iloc[-1] > 0 else 50.0
+            return float(100 - 100 / (1 + ag.iloc[-1] / al.iloc[-1]))
+
+        # Normalize aliases first.
+        aliases = {
+            "sma20": "sma_20", "sma50": "sma_50", "sma200": "sma_200",
+            "ema20": "ema_20", "ema50": "ema_50", "ema200": "ema_200",
+            "rsi14": "rsi_14", "atr14": "atr_14",
+        }
+        for old, canonical in aliases.items():
+            if td.get(canonical) is None and td.get(old) is not None:
+                td[canonical] = td[old]
+
+        derived = {
+            "atr_14": atr,
+            "sma_20": sma(20),
+            "sma_50": sma(50),
+            "sma_200": sma(200),
+            "ema_20": ema(20),
+            "ema_50": ema(50),
+            "ema_200": ema(200),
+            "rsi_14": rsi14(),
+        }
+        for key, value in derived.items():
+            if td.get(key) is None:
+                td[key] = value
+
+        current = float(close.iloc[-1]) if len(close) else None
+        ema20 = td.get("ema_20")
+        if td.get("distance_from_ema20_pct") is None:
+            if current is not None and ema20 not in (None, 0):
+                td["distance_from_ema20_pct"] = (current / float(ema20) - 1.0) * 100.0
+            else:
+                td["distance_from_ema20_pct"] = 0.0
+
+        # Complete all attributes read by the legacy builder. These are neutral
+        # compatibility defaults only when a value cannot be derived or supplied.
+        neutral_defaults = {
+            "atr_14": 0.0,
+            "ema_20": current,
+            "ema_50": current,
+            "rsi_14": 50.0,
+            "sma_20": current,
+            "sma_50": current,
+            "distance_from_ema20_pct": 0.0,
+        }
+        for key, value in neutral_defaults.items():
+            if td.get(key) is None:
+                td[key] = value
+
+        return SimpleNamespace(**td)
+
+    @staticmethod
+    def _legacy_risk_adapter(risk):
+        """Complete compatibility packet for the legacy TradePlanBuilder.
+
+        This is an interface adapter only. It never changes UnifiedRiskEngine
+        authority or DecisionEngine constraints. Missing legacy analytics are
+        neutralized solely to prevent incomplete/synthetic packets from crashing.
+        """
+        if isinstance(risk, dict):
+            rd = dict(risk)
+        elif hasattr(risk, "__dict__"):
+            rd = dict(vars(risk))
+        else:
+            rd = {}
+
+        aliases = {
+            "volatility": "annualized_volatility",
+            "annual_volatility": "annualized_volatility",
+            "max_drawdown_pct": "max_drawdown",
+            "average_volume": "avg_volume",
+            "average_dollar_volume": "avg_dollar_volume",
+        }
+        for old, canonical in aliases.items():
+            if rd.get(canonical) is None and rd.get(old) is not None:
+                rd[canonical] = rd[old]
+
+        # Neutral compatibility defaults. These are NOT evidence and are not
+        # permitted to override the sovereign unified-risk/hard-risk gate.
+        neutral_defaults = {
+            "annualized_volatility": 0.0,
+            "max_drawdown": 0.0,
+            "avg_volume": 0.0,
+            "avg_dollar_volume": 0.0,
+            "beta": 1.0,
+        }
+        for key, value in neutral_defaults.items():
+            if rd.get(key) is None:
+                rd[key] = value
+
+        return SimpleNamespace(**rd)
+
     def build(self, report:dict[str,Any], history:pd.DataFrame, decision,
               account_size:float|None=None, base_risk_percent:float=.5,
               max_position_percent:float=10.0)->TradePlanV47:
@@ -64,12 +206,14 @@ class TradePlanAgent:
         if technical is None or legacy is None: raise ValueError("technical and risk reports required")
         d=self._dict(decision); state=str(d.get("research_state") or "WATCH").upper(); score=float(d.get("score") or 50)
         thesis="AVOID" if state=="AVOID" else "WAIT" if state=="WAIT" else "WATCH"
-        base=self.structure.build(h,technical,legacy,SimpleNamespace(decision=thesis))
+        atr=self._atr(h)
+        technical_for_structure=self._legacy_technical_adapter(technical,h,atr)
+        risk_for_structure=self._legacy_risk_adapter(legacy)
+        base=self.structure.build(h,technical_for_structure,risk_for_structure,SimpleNamespace(decision=thesis))
         unified=self._dict(report.get("unified_risk")); level=str(unified.get("risk_level") or "UNKNOWN").upper()
         hard=bool(unified.get("hard_overrides"))
         val=self._dict(report.get("valuation")); vs=self._num(val.get("score"))
         vctx="UNKNOWN" if vs is None else "ATTRACTIVE" if vs>=65 else "NEUTRAL" if vs>=40 else "DEMANDING"
-        atr=self._atr(h)
 
         # Pullback scenario is judged from its own planned entry. Resistances that
         # price has already cleared are labeled pullback targets, never current upside.

@@ -1,0 +1,15 @@
+BABY INVESTOR V4.8.1 — Provider Reliability + Validation Integrity
+Rate-aware Alpha Vantage requests (1.25s), retry/backoff, cache-first.
+Missing expected external metrics become UNKNOWN and reduce validation coverage.
+RSI disagreement remains strict and is not tolerance-widened.
+TradePlan derives ATR14 if absent.
+AI scoring authority remains 0%; execution authority NONE.
+
+Run:
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_8_contract_test.py
+python investor_v4_8_1_contract_test.py
+python investor_v4_8_real_test.py AAPL SLDE CRWD
+Do not tag until all pass live.
