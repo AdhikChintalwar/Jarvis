@@ -1,57 +1,122 @@
+from __future__ import annotations
+
 import time
+
 import numpy as np
 from openwakeword.model import Model
 
-from voice.microphone import open_microphone_stream, CHUNK
+from core.event_bus import publish
+from voice.microphone_manager import (
+    microphone_manager,
+)
 
 
 class OpenWakeWordEngine:
+    """
+    Wake-word detector using Baby's shared microphone stream.
+
+    The microphone stays open when Baby moves from wake-word
+    detection into active speech recognition.
+    """
+
     def __init__(
         self,
         wake_word: str = "hey_jarvis",
         threshold: float = 0.75,
-        cooldown_seconds: int = 2
-    ):
+        cooldown_seconds: float = 2.0,
+    ) -> None:
         self.wake_word = wake_word
         self.threshold = threshold
-        self.cooldown_seconds = cooldown_seconds
-        self.last_trigger_time = 0
+        self.cooldown_seconds = (
+            cooldown_seconds
+        )
+
+        self.last_trigger_time = 0.0
 
         self.model = Model(
             wakeword_models=[],
-            inference_framework="onnx"
+            inference_framework="onnx",
         )
 
-        self.audio, self.stream = open_microphone_stream()
+        microphone_manager.start()
 
-    def wait_for_wake_word(self):
-        print("Waiting for wake word...")
+    def wait_for_wake_word(
+        self,
+    ) -> str:
+        publish(
+            "wake_listening",
+            {},
+        )
+
+        print(
+            "Waiting for wake word..."
+        )
+
+        microphone_manager.clear()
 
         while True:
-            audio_data = self.stream.read(
-                CHUNK,
-                exception_on_overflow=False
+            frame = (
+                microphone_manager.get_frame(
+                    timeout=1.0
+                )
             )
 
-            frame = np.frombuffer(audio_data, dtype=np.int16)
-            prediction = self.model.predict(frame)
+            if frame is None:
+                continue
 
-            for key, score in prediction.items():
-                current_time = time.time()
+            # openWakeWord expects PCM int16.
+            pcm = np.clip(
+                frame.samples * 32767.0,
+                -32768,
+                32767,
+            ).astype(
+                np.int16
+            )
 
+            prediction = (
+                self.model.predict(
+                    pcm
+                )
+            )
+
+            current_time = time.monotonic()
+
+            for key, score in (
+                prediction.items()
+            ):
                 if (
                     key == self.wake_word
-                    and score > self.threshold
-                    and current_time - self.last_trigger_time > self.cooldown_seconds
+                    and score
+                    >= self.threshold
+                    and current_time
+                    - self.last_trigger_time
+                    >= self.cooldown_seconds
                 ):
-                    self.last_trigger_time = current_time
-                    print(f"Wake word detected: {key}")
+                    self.last_trigger_time = (
+                        current_time
+                    )
+
+                    print(
+                        f"Wake word detected: "
+                        f"{key} "
+                        f"({score:.2f})"
+                    )
+
+                    publish(
+                        "wake_detected",
+                        {
+                            "wake_word": key,
+                            "score": float(
+                                score
+                            ),
+                        },
+                    )
+
+                    # Remove remaining wake-word audio,
+                    # so ASR doesn't transcribe "Jarvis".
+                    microphone_manager.clear()
+
                     return key
 
-    def close(self):
-        try:
-            self.stream.stop_stream()
-            self.stream.close()
-            self.audio.terminate()
-        except Exception:
-            pass
+    def close(self) -> None:
+        microphone_manager.stop()

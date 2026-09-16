@@ -1,0 +1,9 @@
+Baby Investor V4.6.2
+
+Trade-plan and validation integration hardening.
+- Normalizes real OHLCV at the TradePlanAgent boundary.
+- Independently recovers current price from valid history if a legacy adapter returns null.
+- Prints every validation check in the live audit.
+- Adds structural assertions for current price, invalidation, and targets.
+- AI scoring authority remains 0%; execution authority remains NONE.
+- Existing financial/accounting/valuation/event/macro/risk formulas are unchanged.

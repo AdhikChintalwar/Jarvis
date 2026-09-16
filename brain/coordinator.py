@@ -3,6 +3,8 @@ from agents.desktop_agent import decide_desktop_action
 from agents.browser_agent import decide_browser_action
 from core.portal_state import write_state
 from core.event_bus import publish
+from agents.coding_agent import decide_coding_action
+from agents.workspace_agent import handle_workspace_task
 
 def reset_agents():
     return {
@@ -52,11 +54,10 @@ def coordinate_task(task: str) -> dict:
         decision = decide_browser_action(task)
 
     elif agent == "coding":
-        # Coding Agent not built yet
-        decision = {
-            "tool": "planner",
-            "target": task
-        }
+        decision = decide_coding_action(task)
+    
+    elif agent == "workspace":
+        decision = handle_workspace_task(task)
 
     elif agent == "memory":
         # Memory Agent not built yet

@@ -1,0 +1,17 @@
+BABY INVESTOR V4.5.8 — Proper Two-Stage Deep Reliability Fix
+
+1. JSON parser now recovers complete objects from deliberations, rankings, or
+   candidates arrays, not only legacy candidates arrays.
+2. Deep deliberation output budget increased substantially and output made more compact.
+3. A failed/truncated/malformed primary deliberation gets one dedicated deep
+   JSON/schema recovery pass.
+4. If recovery also fails, Baby marks DEEP_DELIBERATION_UNAVAILABLE and
+   continues deterministic-only instead of crashing.
+5. Final AI committee is skipped when validated deliberation is unavailable.
+6. Any final committee exception also falls back deterministically; malformed
+   LLM output is never allowed to terminate the investment pipeline.
+7. Deliberation and committee provider health are independently observable.
+8. V4.5.7 exact deterministic fallback semantics remain: llm_score=None,
+   llm_weight=0, confidence=0, final score=deterministic baseline.
+9. No deterministic financial/accounting/valuation/event/macro/market/risk/
+   portfolio formulas changed.

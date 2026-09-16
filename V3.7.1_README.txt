@@ -1,0 +1,10 @@
+BABY INVESTOR V3.7.1 — Accounting Semantics & Score Calibration
+
+Changes:
+- OCF/net-income cash conversion is calculated only for positive net income.
+- Loss-making companies use a separate cash-generation-despite-losses signal.
+- Positive accounting signals use diminishing returns instead of linear saturation.
+- Extreme positive scores have evidence-depth ceilings.
+- Historical trend authority scales with annual-history depth.
+- AccountingQualityReport exposes history_periods and history_confidence.
+- Missing evidence remains neutral and lowers evidence depth/confidence only.

@@ -6,8 +6,7 @@ from pathlib import Path
 
 _subscribers = defaultdict(list)
 
-EVENT_LOG_FILE = Path(__file__).resolve().parent.parent / "data" / "events.jsonl"
-
+EVENT_LOG_FILE = Path(__file__).resolve().parent.parent / "baby-portal" / "public" / "events.jsonl"
 
 def subscribe(event_name: str, handler):
     _subscribers[event_name].append(handler)

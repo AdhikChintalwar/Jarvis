@@ -1,0 +1,40 @@
+BABY INVESTOR V4.2 — Unified Risk Model
+
+Purpose
+-------
+Consolidates verified risk evidence into one deterministic safety layer while
+keeping investment quality and risk conceptually separate.
+
+Dimensions
+----------
+- financial
+- accounting
+- valuation
+- market / realized volatility
+- liquidity
+- SEC / event
+- macro + market environment
+
+Core safety semantics
+---------------------
+- Missing evidence = UNKNOWN, not bearish.
+- Dimension scores use 0 low risk -> 100 extreme risk.
+- Evidence confidence affects aggregation authority.
+- Extreme 20D annualized realized volatility (>=90%) creates a hard risk floor.
+- Severe low dollar-volume liquidity (<$1M average/day) creates a hard risk floor.
+- Registration / mention-only SEC events do NOT trigger dilution/event overrides.
+- Valuation risk is bounded because expensive does not equal unsafe.
+- position_risk_multiplier is only a future sizing safety input.
+- V4.2 still does not submit or authorize orders.
+- Existing StockScore is intentionally unchanged.
+
+Real-test expectation
+---------------------
+CRWD should be a useful hard-override validation case if its realized volatility
+remains around the ~98% observed in V4.1.
+
+Known limitation
+----------------
+Liquidity coverage depends on whether the current analyzer's market-data/info
+object exposes average dollar volume or enough price/volume fields. If not,
+liquidity must remain UNKNOWN rather than being guessed.

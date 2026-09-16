@@ -1,0 +1,3 @@
+BABY INVESTOR V3.7 — Accounting Quality & Financial Risk Intelligence
+Adds conservative SEC annual history; cash conversion; FCF margin; cash-vs-earnings gap; net cash; share-count change; margin/FCF trends; evidence-aware accounting score; red flags/positive signals/unknowns; scoring and committee integration.
+Missing evidence is neutral. Trend claims require two annual SEC periods. AI never resolves accounting contradictions.

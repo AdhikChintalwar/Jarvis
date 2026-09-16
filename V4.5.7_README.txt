@@ -1,0 +1,14 @@
+BABY INVESTOR V4.5.7 — Governance + Deliberation Integrity Hardening
+
+- Deterministic fallback is now explicit: llm_score=None, llm_weight=0,
+  confidence=0, final score exactly equals deterministic baseline.
+- Provider fallback cannot masquerade as a successful AI committee decision.
+  Unconstrained deterministic finalists display RESEARCH_ONLY; hard-risk names
+  remain WATCH/WAIT/AVOID as constrained.
+- Deep-deliberation cache validation now checks nested claim arrays; malformed
+  string claims invalidate the cache and force a fresh deliberation.
+- UNKNOWN validator claims are no longer treated as supported factual claims.
+- Deliberation diagnostics now separate factual integrity, schema integrity,
+  effective integrity, accepted/rejected counts, and unknown claims.
+- Deep prompt explicitly requires claim objects.
+- No deterministic investment-analysis formulas changed.

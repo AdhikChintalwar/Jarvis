@@ -1,0 +1,19 @@
+BABY INVESTOR V4.5.1 — Deep Deliberation Schema Guard
+
+Hotfix for live Nemotron variability observed in V4.5.
+
+Problem:
+Nemotron can occasionally return a string inside bull_claims, bear_claims, or
+contradictions even though JSON list[object] was requested. ClaimValidator
+correctly expects claim objects and V4.5 allowed the malformed value to reach it.
+
+Fix:
+- Normalize dict -> one-item list.
+- Reject string/non-list claim containers before validation.
+- Reject non-dict members inside claim lists.
+- Preserve malformed model output as unsupported audit records.
+- Never promote malformed text into evidence.
+- Final committee receives only validated supported deliberation claims.
+- Existing deterministic risk ceilings and hard overrides are unchanged.
+
+No scoring, financial, risk, valuation, market, SEC, or portfolio formulas changed.

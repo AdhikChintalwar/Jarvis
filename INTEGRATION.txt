@@ -1,0 +1,54 @@
+V3.4.1 INTEGRATION NOTE
+=======================
+
+One small edit is required in your existing primary_financial_engine.py because
+V3.4 created the engine locally and its exact V3.4 file should remain the base.
+
+1. Add:
+from .validation_provenance import build_sec_validation_provenance
+
+2. Immediately before:
+validation = self.cross_validator.validate(...)
+
+create:
+sec_provenance = build_sec_validation_provenance(statements, trend_report)
+
+3. Pass:
+sec_provenance=sec_provenance
+
+So the call becomes conceptually:
+
+validation = self.cross_validator.validate(
+    ticker=ticker,
+    sec_metrics=metrics,
+    sec_periods=periods,
+    sec_provenance=sec_provenance,
+).to_dict()
+
+Do not change the SEC metric values.
+
+EXPECTED CRWD
+=============
+The prior V3.4 output showed:
+SEC capex   302,108,000
+Yahoo capex 370,859,000
+same FY, numeric difference ~18.54%
+
+V3.4.1 must only call that MATERIAL_DISAGREEMENT if the definitions are
+semantically comparable.
+
+If semantic equivalence is not established:
+capex -> DEFINITION_UNVERIFIED or DEFINITION_MISMATCH
+SEC value remains available with reduced confidence.
+
+FCF inherits the CapEx semantic caution instead of becoming a misleading
+numeric disagreement.
+
+TEST
+====
+python -m py_compile investor/primary_data/*.py primary_financial_v3_4_1_test.py
+python primary_financial_v3_4_1_test.py
+
+GIT
+===
+Do NOT commit until output is reviewed.

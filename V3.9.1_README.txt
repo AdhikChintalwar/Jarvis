@@ -1,0 +1,20 @@
+BABY INVESTOR V3.9.1 — SEC Event Context Validation
+
+Adds a conservative semantic stage gate for SEC financing/capital-structure phrase hits:
+MENTION
+HISTORICAL_REFERENCE
+RISK_DISCLOSURE
+REGISTRATION
+ANNOUNCED_TRANSACTION
+ACTIVE_TRANSACTION
+COMPLETED_TRANSACTION
+
+Only ANNOUNCED / ACTIVE / COMPLETED financing contexts can create directional event pressure.
+Registration, generic mentions, historical references and conditional risk disclosures remain direction UNKNOWN.
+This prevents a generic 'public offering', 'warrants', or 'convertible debt' phrase inside a 10-Q
+from being treated as evidence of a current transaction.
+
+Going-concern evidence remains independently directional primary risk evidence.
+
+Note: DeepSECAnalysis.dilution_score is retained as the legacy raw phrase-risk diagnostic for now.
+EventIntelligence is the context-gated layer that should be used for directional catalyst decisions.

@@ -1,0 +1,30 @@
+BABY INVESTOR V4.3.1 — Backtest Integrity Stabilization
+
+Why this patch exists
+---------------------
+The V4.3 real test requested five years but the common AAPL/SLDE/CRWD aligned
+portfolio began on 2025-06-18. The numerical backtest was valid for that common
+period, but it must not be described as a five-year portfolio backtest.
+
+V4.3.1 adds
+-----------
+- per-symbol available history start/end/observations/calendar years
+- benchmark history metadata
+- explicit common aligned portfolio start/end/calendar years
+- requested-period vs actual-period comparison
+- minimum-history requirement
+- LIMITED_HISTORY integrity state
+- strict_history mode that can reject insufficient history
+- warnings that prohibit describing a truncated run as the requested horizon
+- annualized CAGR based on actual calendar span rather than observations/252
+- benchmark CAGR based on its actual aligned calendar span
+
+Important semantics
+-------------------
+Historical returns remain descriptive, not forecasts.
+Yahoo/yfinance remains prototype/secondary-grade.
+Adjusted prices remain required for return calculations.
+V4.3.1 does not solve survivorship bias, delisting bias, point-in-time
+fundamentals, point-in-time universe membership, or realistic market impact.
+Those controls are required before Baby can trust strategy backtests.
+No brokerage orders are created or submitted.

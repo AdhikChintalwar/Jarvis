@@ -1,0 +1,10 @@
+BABY INVESTOR V3.8.1 — Valuation Semantics & Calibration
+
+- Explicit PROFITABLE / LOSS_MAKING / UNKNOWN states.
+- Explicit FCF_POSITIVE / FCF_NEGATIVE / UNKNOWN states.
+- Negative/zero earnings => trailing P/E and earnings yield are N.M. (None).
+- Negative/zero FCF => P/FCF, EV/FCF and FCF yield are N.M.
+- Separate absolute valuation score and growth-adjusted score.
+- Growth adjustment is only a 20% modifier; it cannot excuse extreme absolute valuation.
+- Market-data date and verified-financial period provenance are exposed separately.
+- Missing evidence remains neutral.

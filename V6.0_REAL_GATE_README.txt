@@ -1,0 +1,25 @@
+BABY INVESTOR V6.0 — REAL DATA RELEASE GATE
+
+Adds:
+- exact SEC acceptance-time point-in-time boundary filtering
+- America/New_York -> UTC normalization for complete-submission ACCEPTANCE-DATETIME
+- submissions/acceptance in-memory caching
+- real AAPL + CRWD pre/post acceptance leakage tests
+- Company Facts accession leakage test
+- production FinancialEngine + DecisionEngine partial historical replay
+- explicit partial-replay coverage guard
+- one-command V6 release gate
+
+Run:
+python investor_v6_0_release_gate.py
+
+Important:
+The production replay is intentionally PARTIAL. Only historically reconstructed
+financial-health evidence is passed into DecisionEngine. Missing accounting,
+valuation, market, macro, event and unified-risk historical modules remain UNKNOWN.
+The DecisionEngine must therefore show only 20% configured module coverage.
+
+Do NOT interpret this partial replay as a historical buy/sell recommendation.
+
+The next integration after this real gate is to reconstruct the remaining historical
+V4.x modules and only then run broad walk-forward/OOS performance claims.

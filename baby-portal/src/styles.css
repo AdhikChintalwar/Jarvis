@@ -1,0 +1,317 @@
+@import "@fontsource/orbitron";
+@import "@fontsource/inter";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #05070b;
+  color: #d8e4f0;
+  font-family: "Inter", sans-serif;
+  overflow: hidden;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    radial-gradient(circle at center, rgba(0, 229, 255, 0.13), transparent 38%),
+    linear-gradient(145deg, #05070b, #080d14 55%, #030407);
+}
+
+.top-bar {
+  height: 90px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  font-family: "Orbitron", sans-serif;
+  letter-spacing: 14px;
+  margin: 0;
+  font-size: 42px;
+}
+
+h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: #6be5ff;
+}
+
+.top-bar p {
+  margin-top: 6px;
+  color: #7da3b8;
+}
+
+.status-pill {
+  padding: 12px 18px;
+  border: 1px solid rgba(107, 229, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(107, 229, 255, 0.08);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-family: "Orbitron";
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background: #6be5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 18px #6be5ff;
+  animation: pulse 1.4s infinite;
+}
+
+.main-grid {
+  height: calc(100vh - 120px);
+  display: grid;
+  grid-template-columns: 330px 1fr 330px;
+  gap: 24px;
+}
+
+.left-panel,
+.right-panel {
+  border: 1px solid rgba(107, 229, 255, 0.16);
+  background: rgba(8, 15, 24, 0.68);
+  border-radius: 28px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.08);
+}
+
+.center-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.neural-wrap {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  display: grid;
+  place-items: center;
+}
+
+.neural-core {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #6be5ff 18%, #006b91 50%, transparent 72%);
+  box-shadow:
+    0 0 50px rgba(107, 229, 255, 0.9),
+    0 0 130px rgba(107, 229, 255, 0.35);
+}
+
+.core-thinking {
+  box-shadow:
+    0 0 60px rgba(142, 108, 255, 0.95),
+    0 0 150px rgba(142, 108, 255, 0.4);
+}
+
+.core-executing {
+  box-shadow:
+    0 0 60px rgba(0, 255, 153, 0.95),
+    0 0 150px rgba(0, 255, 153, 0.4);
+}
+
+.core-center {
+  position: absolute;
+  inset: 82px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 40px white;
+}
+
+.core-ring {
+  position: absolute;
+  border: 1px solid rgba(107, 229, 255, 0.35);
+  border-radius: 50%;
+}
+
+.ring-one {
+  inset: -30px;
+}
+
+.ring-two {
+  inset: -70px;
+}
+
+.ring-three {
+  inset: -115px;
+}
+
+.core-label {
+  position: absolute;
+  bottom: 10px;
+  font-family: "Orbitron";
+  color: #6be5ff;
+  letter-spacing: 4px;
+  font-size: 13px;
+}
+
+.orbit-layer {
+  position: absolute;
+  width: 720px;
+  height: 520px;
+}
+
+.orbit-node {
+  position: absolute;
+  width: 125px;
+  height: 44px;
+  border: 1px solid rgba(107, 229, 255, 0.45);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(107, 229, 255, 0.08);
+  color: #d8e4f0;
+  font-family: "Orbitron";
+  font-size: 12px;
+  box-shadow: 0 0 20px rgba(107, 229, 255, 0.18);
+}
+
+.node-top {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.node-bottom {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.node-left {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.node-right {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.node-active {
+  background: rgba(142, 108, 255, 0.24);
+  border-color: #8e6cff;
+  box-shadow: 0 0 40px rgba(142, 108, 255, 0.9);
+}
+
+.beam {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(107, 229, 255, 0.5), transparent);
+  filter: blur(0.6px);
+  animation: beamPulse 2s infinite;
+}
+
+.beam-horizontal {
+  width: 560px;
+  height: 1px;
+  top: 50%;
+  left: 80px;
+}
+
+.beam-vertical {
+  width: 1px;
+  height: 380px;
+  left: 50%;
+  top: 70px;
+  background: linear-gradient(180deg, transparent, rgba(142, 108, 255, 0.5), transparent);
+}
+
+.timeline-item {
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(107, 229, 255, 0.07);
+  border-left: 3px solid rgba(107, 229, 255, 0.55);
+}
+
+.timeline-item span {
+  display: block;
+  color: #6be5ff;
+  font-size: 12px;
+}
+
+.timeline-item strong {
+  font-weight: 500;
+}
+
+.agent-chip {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  margin: 12px 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.agent-chip small {
+  color: #7da3b8;
+}
+
+.pipeline {
+  margin-top: 32px;
+}
+
+.pipeline-stage {
+  margin: 10px 0;
+  padding: 12px;
+  text-align: center;
+  border-radius: 14px;
+  background: rgba(107, 229, 255, 0.07);
+  color: #9edff0;
+}
+
+.particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particles span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #6be5ff;
+  border-radius: 50%;
+  opacity: 0.45;
+  box-shadow: 0 0 12px #6be5ff;
+  animation: floatParticle linear infinite;
+}
+
+@keyframes floatParticle {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-80px);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+}
+
+@keyframes beamPulse {
+  50% {
+    opacity: 0.3;
+    transform: scaleX(0.7);
+  }
+}

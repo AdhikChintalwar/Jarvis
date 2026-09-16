@@ -1,0 +1,39 @@
+BABY INVESTOR V7.0 — ACTUAL INVESTMENT TESTING
+
+This is the first portfolio-level historical investment test.
+
+What it does:
+- reconstructs Baby research at scheduled historical dates
+- uses SEC point-in-time filings and ALFRED historical vintages
+- uses only market bars through each simulated date
+- converts deterministic Baby decisions into long-only portfolio targets
+- executes AFTER the signal at the NEXT TRADING BAR OPEN
+- applies 5 bps slippage and 2% next-bar volume participation cap
+- tracks cash, positions, fills, equity, turnover and costs
+- compares against SPY and QQQ buy-and-hold
+- measures CAGR, return, volatility, Sharpe and max drawdown
+- calibrates Baby score bins against forward 5D/21D/63D returns
+- attributes 21D forward outcomes by research state and risk level
+- saves a complete JSON audit/report
+- AI scoring authority = 0%
+- AI execution authority = 0%
+- real-money execution = DISABLED
+
+IMPORTANT LIMITATION:
+The built-in real test uses a fixed 10-stock large-cap sample. That is an ACTUAL
+historical investment simulation but NOT a survivorship-free whole-US-market
+backtest. Its audit deliberately says survivorship_status=INCOMPLETE.
+
+The reason is data integrity: a trustworthy dated listing/delisting universe has
+not yet been connected. V7 refuses to hide that limitation.
+
+Run code gate:
+python investor_v7_0_release_gate.py
+
+Run actual investment test:
+python investor_v7_0_real_investment_test.py --start 2023-01-03 --end 2025-12-31 --rebalance M
+
+Faster first smoke test:
+python investor_v7_0_real_investment_test.py --start 2024-01-03 --end 2025-12-31 --rebalance Q
+
+Do NOT interpret a positive historical result as a guarantee of future returns.

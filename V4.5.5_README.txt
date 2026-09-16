@@ -1,0 +1,6 @@
+BABY INVESTOR V4.5.5 — Committee Schema Recovery
+Adds strict deep-committee output validation, diagnostics, one thinking-ON schema
+repair pass, cache-only-after-task-schema-validation, and deterministic-only
+fallback if repair still fails. Schema repair is instructed to reformat only
+existing output and not invent new facts/conclusions. Investment formulas,
+risk ceilings, evidence validation and deterministic governance are unchanged.

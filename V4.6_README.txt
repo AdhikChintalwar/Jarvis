@@ -1,0 +1,42 @@
+BABY INVESTOR V4.6 — DETERMINISTIC DECISION & VALIDATION ARCHITECTURE
+
+MAJOR CHANGE
+Nemotron/LLM scoring authority is now structurally 0% in BabyInvestmentSystem.
+The deterministic DecisionEngine owns the reproducible research-attractiveness score.
+AI remains useful as an optional research/red-team layer but cannot alter this score.
+
+NEW MODULES
+- investor/decision_engine.py
+  Sovereign deterministic decision score from financial health, accounting quality,
+  valuation, event intelligence, macro regime, advanced market intelligence and
+  unified-risk quality. Missing modules are omitted, not scored bearish. Risk hard
+  overrides constrain research state.
+
+- investor/validation_engine.py
+  Permanent audit layer. Checks primary financial availability/status, independently
+  recalculates selected technical indicators from supplied price history, and accepts
+  provider-agnostic external reference packets for reconciliation. Disagreement is
+  surfaced as PASS/REVIEW/FAIL/UNKNOWN rather than silently overwritten.
+
+- investor/trade_plan_v46.py
+  Deterministic trade-research plan built on Baby's existing structural TradePlanEngine
+  and PositionSizingEngine. Produces entry zone, breakout trigger, invalidation,
+  targets, risk/reward, valuation context and optional risk-adjusted sizing. It never
+  places an order.
+
+- investor/investment_system.py
+  Orchestrates decision + validation + trade plan. Explicitly reports:
+    ai_scoring_authority = 0.0
+    execution_authority = NONE
+
+IMPORTANT LIMITS
+- V4.6 is NOT yet a point-in-time strategy backtest.
+- Yahoo/yfinance remains prototype/secondary market data in existing modules.
+- Trade-plan levels are deterministic research scenarios, not guaranteed prices.
+- External benchmark data must be supplied independently; ValidationEngine does not
+  pretend one vendor is authoritative.
+- Real-money order execution is intentionally absent and remains human-approved.
+
+NEXT LARGE PHASE
+Point-in-time historical evidence store + walk-forward/out-of-sample validation +
+paper-trading ledger, so DecisionEngine versions can be tested without look-ahead.

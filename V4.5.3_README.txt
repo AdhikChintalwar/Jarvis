@@ -1,0 +1,19 @@
+BABY INVESTOR V4.5.3 — Deep Reasoning Inspection
+
+This release changes observability, not investment formulas.
+
+The final committee result now includes an audit-only deep_deliberation section.
+The real test prints, per finalist:
+- deterministic, Nemotron, and final governed scores;
+- decision and maximum decision;
+- evidence authority, module coverage, integrity;
+- validated bull claims;
+- validated bear/risk claims;
+- validated contradictions/synthesis claims;
+- unresolved questions;
+- rejected/unsupported deliberation output;
+- final validated committee claims;
+- governance constraints.
+
+No financial, accounting, valuation, SEC/event, macro, market, unified-risk,
+portfolio, committee weighting, or risk-ceiling formulas changed.

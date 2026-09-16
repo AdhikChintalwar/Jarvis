@@ -1,0 +1,42 @@
+BABY INVESTOR V4.4 — Final Investment Committee Governance
+
+Architecture
+------------
+Deterministic engines
+    -> EvidenceBuilder
+    -> EvidenceRegistry
+    -> FinalCommitteeGuard
+    -> Nemotron synthesis
+    -> ClaimValidator / ReportValidator
+    -> deterministic governance
+    -> final research ranking
+
+Core rule
+---------
+Nemotron is the investment committee, not the financial-data source and not the
+risk authority.
+
+V4.4 adds
+---------
+- deterministic committee baseline from:
+  financial health, accounting quality, valuation, event intelligence,
+  macro regime, advanced market intelligence, and inverse unified risk
+- confidence x coverage authority weighting
+- missing modules omitted rather than scored bearish
+- deterministic maximum-decision ceilings
+- hard-risk overrides cannot be talked away by Nemotron
+- VERY_HIGH risk => maximum WATCH
+- EXTREME risk => maximum WAIT
+- weak committee evidence => maximum WATCH
+- final score = deterministic baseline plus integrity-weighted minority LLM input
+- final confidence capped by evidence authority and claim integrity
+- final ranking sorted by governed score, not the LLM's proposed rank
+- provenance/reliability mappings for all V3.7-V4.2 evidence layers
+- audit fields showing deterministic score, LLM score, authority, coverage,
+  decision ceiling, constraints, and module contributions
+
+Important
+---------
+committee_score is a research-attractiveness synthesis, not a predicted return.
+V4.4 does not place orders and does not authorize real-money execution.
+Yahoo/yfinance evidence remains prototype/secondary where applicable.

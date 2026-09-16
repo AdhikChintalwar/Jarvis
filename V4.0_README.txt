@@ -1,0 +1,23 @@
+BABY INVESTOR V4.0 — Macro + Market Regime Intelligence
+
+Adds deterministic macro/market regime evidence:
+- SPY, QQQ, IWM 20-session trend/breadth
+- VIX volatility regime
+- 10Y Treasury yield direction proxy
+- Optional FRED: Fed Funds, CPI, unemployment (requires FRED_API_KEY)
+- risk-on / neutral / risk-off regime
+- financial-conditions synthesis
+- source, as-of date, authority, confidence, coverage, unknowns
+- committee evidence integration
+
+Safety/semantics:
+- Missing FRED data is UNKNOWN, never bearish.
+- Yahoo/yfinance is explicitly labeled a prototype market proxy with 0.70 authority.
+- FRED observations use 0.98 authority.
+- Macro is exposed as evidence in V4.0 but is NOT yet allowed to alter the stock score.
+  Stock-specific macro sensitivity and calibrated score integration belong in the next layer.
+- FRED 'change_20d_pct' is currently a multi-observation trend proxy due different series frequencies;
+  it should not be interpreted as 20 trading days.
+
+Recommended .env:
+FRED_API_KEY=<your key>

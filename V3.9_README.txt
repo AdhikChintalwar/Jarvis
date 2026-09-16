@@ -1,0 +1,18 @@
+BABY INVESTOR V3.9 — Catalyst, News & SEC Event Intelligence
+
+Adds:
+- Unified deterministic event records with event date, source, evidence class,
+  direction, materiality, confidence, age and freshness decay.
+- SEC filing metadata is primary evidence.
+- News headline classification is explicitly secondary evidence.
+- S-1/S-3/F-1/F-3/424B forms never automatically mean completed dilution.
+- Form 4 never automatically means insider buying or selling.
+- 8-K/6-K never automatically receive bullish/bearish direction from form alone.
+- Deep SEC going-concern evidence can create a primary negative event.
+- Financing language is preserved as risk evidence but not proof of issuance.
+- Old events decay out of the active catalyst set.
+- Committee evidence now receives event intelligence.
+- Existing CatalystEngine remains for backward compatibility.
+
+V3.9 intentionally does not yet parse Form 4 transaction tables or 8-K item text
+into a full corporate-event ontology. Those require dedicated primary parsers.

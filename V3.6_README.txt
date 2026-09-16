@@ -1,0 +1,5 @@
+BABY INVESTOR V3.6
+QUALITY != EVIDENCE CONFIDENCE != EVIDENCE COVERAGE.
+MISSING and MATERIAL_DISAGREEMENT have zero directional authority.
+REVIEW and PERIOD_MISMATCH remain usable with reduced authority.
+Built on the validated V3.5.2 integration.

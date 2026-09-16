@@ -19,6 +19,11 @@ VALID_ACTIONS = {
 }
 
 def execute_tool_decision(tool: str, target: str, speak):
+    if tool == "workspace_answer":
+        print("Workspace Answer:", target)
+        speak(target)
+        return target
+        
     registered_tool = get_registered_tool(tool)
 
     if registered_tool:

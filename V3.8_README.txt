@@ -1,0 +1,19 @@
+BABY INVESTOR V3.8 — Valuation Intelligence
+
+Adds deterministic valuation based on current market cap plus verified SEC-primary denominators:
+- trailing P/E
+- price/sales
+- enterprise value
+- EV/sales
+- price/FCF
+- EV/FCF
+- earnings yield
+- FCF yield
+- trailing P/E / verified revenue-growth diagnostic
+- secondary/prototype forward P/E kept explicitly low-authority
+- valuation evidence confidence, coverage, positives, red flags and unknowns
+- StockScoringEngine and committee-evidence integration
+
+Important:
+This version does NOT claim intrinsic/fair value. Multiple bands are broad deterministic heuristics.
+Peer-relative valuation and historical valuation ranges require a later trusted historical/peer market-data layer.

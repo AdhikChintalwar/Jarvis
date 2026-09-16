@@ -1,0 +1,19 @@
+BABY INVESTOR V4.3.2 — Common-Period Alignment Hotfix
+
+Root cause fixed
+----------------
+V4.3.1 correctly identified SLDE's short history, but PortfolioAnalyticsEngine
+reported common_start from the first RETURN observation. pct_change removes the
+first PRICE observation, so analytics started on 2025-06-20 while the backtest
+correctly started on 2025-06-18.
+
+V4.3.2 semantics
+----------------
+- Common portfolio start/end are derived from aligned PRICE observations.
+- Backtester and analytics therefore describe the identical historical window.
+- PortfolioRiskReport.observations now means aligned PRICE observations.
+- Return observations are implicitly price observations minus one.
+- LIMITED_HISTORY behavior remains unchanged.
+- Calendar-span CAGR behavior remains unchanged.
+- No investment score or unified-risk logic is changed.
+- No brokerage/order functionality is added.

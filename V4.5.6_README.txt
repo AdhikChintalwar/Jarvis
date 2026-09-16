@@ -1,0 +1,16 @@
+BABY INVESTOR V4.5.6 — Nested LLM Schema Safety
+
+Hardens the final committee boundary after V4.5.5 successfully repaired the
+top-level ranking/rankings mismatch but exposed malformed members inside claims.
+
+Changes:
+- final claims container normalized before ClaimValidator;
+- dict -> one claim; list -> object members retained;
+- strings/non-object members quarantined as unsupported audit records;
+- malformed members contribute to the unsupported-claim confidence penalty;
+- ClaimValidator has a second defensive non-dict guard, so malformed model
+  output cannot leak an AttributeError;
+- V4.5.5 top-level schema recovery and cache validation remain intact.
+
+No financial/accounting/valuation/event/macro/market/risk/portfolio or
+deterministic governance formulas changed.

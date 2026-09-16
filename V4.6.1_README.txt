@@ -1,0 +1,19 @@
+BABY INVESTOR V4.6.1 — ANALYZER INTEGRATION HOTFIX
+
+Fixes the live V4.6 crash at analyzer stage 15/16.
+
+Root cause:
+V4.6 analyzer passed accounting_quality and valuation into the legacy
+StockScoringEngine.score() method, but that method intentionally accepts only
+market, technical, fundamentals, risk, and primary_financial. Accounting quality
+and valuation belong to the new sovereign DecisionEngine, which consumes the
+completed analyzer report after StockAnalyzer finishes.
+
+Fix:
+- Removed the two invalid legacy scoring kwargs from analyzer.py.
+- Did NOT add fake/unused parameters to StockScoringEngine.
+- Accounting quality and valuation remain in the analyzer report and are consumed
+  by DecisionEngine with V4.6 weights.
+- Cleaned the synthetic RSI divide-by-zero warning.
+- No financial, accounting, valuation, risk, macro, market, event, decision, or
+  trade-plan formulas changed.

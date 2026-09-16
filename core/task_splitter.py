@@ -1,100 +1,127 @@
-import json
-import ollama
+from __future__ import annotations
 
-MODEL = "qwen3:30b"
-
-
-def extract_json(content: str) -> dict:
-    start = content.find("{")
-    end = content.rfind("}") + 1
-
-    if start == -1 or end == 0:
-        raise ValueError("No JSON found")
-
-    return json.loads(content[start:end])
+import re
 
 
-def split_tasks(user_text: str) -> list[str]:
-    prompt = f"""
-You are Baby's task splitter.
+MULTI_TASK_PATTERNS = [
+    r"\band then\b",
+    r"\bthen\b",
+    r"\bafter that\b",
+    r"\bnext\b",
+    r"\balso\b",
+    r";",
+]
 
-Your job:
-Split the user's command into separate independent tasks.
 
-Rules:
-- Return ONLY valid JSON.
-- If the command contains one task, return one task.
-- If the command contains multiple tasks joined by "and", "then", "also", or commas, split them.
-- Do NOT change the meaning.
-- Do NOT invent tasks.
-- Keep each task short and executable.
-- Preserve important words like app names, project names, websites, topics, and dates.
+def _clean_task(text: str) -> str:
+    text = text.strip()
 
-Return format:
-{{
-  "tasks": [
-    "task one",
-    "task two"
-  ]
-}}
-
-Examples:
-
-User:
-Open VS Code and find me good Python videos
-
-Return:
-{{
-  "tasks": [
-    "Open VS Code",
-    "Find me good Python videos"
-  ]
-}}
-
-User:
-Open my coding setup then search YouTube for LangGraph tutorials
-
-Return:
-{{
-  "tasks": [
-    "Open my coding setup",
-    "Search YouTube for LangGraph tutorials"
-  ]
-}}
-
-User:
-What time is it
-
-Return:
-{{
-  "tasks": [
-    "What time is it"
-  ]
-}}
-
-Now split this command:
-
-{user_text}
-"""
-
-    response = ollama.chat(
-        model=MODEL,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+    text = re.sub(
+        r"\s+",
+        " ",
+        text,
     )
 
-    content = response["message"]["content"].strip()
-    print("RAW TASK SPLIT:", content)
+    return text.strip(
+        " ,;"
+    )
 
-    try:
-        data = extract_json(content)
-        tasks = data.get("tasks", [])
 
-        if not tasks:
-            return [user_text]
+def _looks_like_real_task(
+    text: str,
+) -> bool:
+    text = _clean_task(text)
 
-        return tasks
+    if not text:
+        return False
 
-    except Exception:
-        return [user_text]
+    words = text.split()
+
+    return len(words) >= 2
+
+
+def split_tasks(
+    command_text: str,
+) -> list[str]:
+    """
+    Fast local task splitter.
+
+    Most voice commands are a single task, so they return immediately
+    without calling an LLM.
+
+    Examples:
+
+        "What's the time?"
+        ->
+        ["What's the time?"]
+
+        "Open Chrome and then search Google for Python"
+        ->
+        [
+            "Open Chrome",
+            "search Google for Python",
+        ]
+    """
+
+    if not isinstance(
+        command_text,
+        str,
+    ):
+        return []
+
+    text = command_text.strip()
+
+    if not text:
+        return []
+
+    # ---------------------------------------------------------
+    # First determine whether this even looks multi-step.
+    # ---------------------------------------------------------
+
+    lowered = text.lower()
+
+    has_separator = any(
+        re.search(
+            pattern,
+            lowered,
+            flags=re.IGNORECASE,
+        )
+        for pattern in MULTI_TASK_PATTERNS
+    )
+
+    if not has_separator:
+        return [text]
+
+    # ---------------------------------------------------------
+    # Split only on explicit sequential connectors.
+    # Do NOT split every normal "and".
+    # ---------------------------------------------------------
+
+    split_pattern = (
+        r"\s+(?:and then|after that|then|also|next)\s+"
+        r"|;"
+    )
+
+    pieces = re.split(
+        split_pattern,
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    tasks = [
+        _clean_task(piece)
+        for piece in pieces
+        if _looks_like_real_task(
+            piece
+        )
+    ]
+
+    if len(tasks) <= 1:
+        return [text]
+
+    print(
+        "FAST TASK SPLIT:",
+        tasks,
+    )
+
+    return tasks

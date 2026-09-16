@@ -1,0 +1,12 @@
+BABY INVESTOR V3.6.2
+
+Fixes inconsistent evidence coverage between FinancialHealth and StockScore.
+
+One canonical seven-metric evidence profile is now shared by both:
+revenue growth, net margin, operating margin, FCF, OCF, cash, debt.
+
+Result:
+- missing operating margin is visible to both engines
+- gated metrics propagate consistently
+- coverage/confidence use one deterministic definition
+- missing evidence still lowers conviction, not directional quality

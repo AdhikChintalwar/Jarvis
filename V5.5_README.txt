@@ -1,0 +1,28 @@
+BABY INVESTOR V5.5 — HISTORICAL RESEARCH & VALIDATION PLATFORM
+
+Built on frozen V5.0 point-in-time contracts.
+
+Added:
+- Official SEC submissions-history adapter including historical submissions files.
+- EDGAR complete-submission acceptance timestamp extraction.
+- Company Facts filtered by accession numbers actually available at simulated time.
+- SEC accession/form/concept provenance on historical facts.
+- Deterministic historical financial resolver and FCF.
+- Historical market slicing.
+- Walk-forward/out-of-sample fold generator.
+- Equal-weight and simple momentum benchmark framework.
+- Validation audit reporting model version, lookahead, survivorship, PIT status.
+- HistoricalResearchPlatform orchestration.
+
+Important limitations intentionally preserved:
+- This version does NOT claim a complete historical listed-equity/delisting database.
+  PointInTimeUniverse still requires a dated membership ledger.
+- Company Facts is filtered by accession to prevent later filings/restatements from
+  leaking backward, but full filing-instance reconstruction remains preferable for
+  difficult XBRL taxonomy/dimension cases.
+- Historical financial resolver is conservative and does not yet replay every V4.x
+  financial/accounting/valuation formula.
+- No real-money execution.
+- AI scoring authority remains 0%; execution authority remains 0%.
+
+SEC_USER_AGENT must be configured in .env.

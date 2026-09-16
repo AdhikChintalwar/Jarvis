@@ -1,0 +1,11 @@
+BABY INVESTOR V3.6.1 HOTFIX
+
+Fixes StockScoringEngine.score() not accepting primary_financial.
+
+The V3.6 package correctly changed analyzer.py to pass primary_financial,
+but the scoring_engine.py public score() signature and its internal
+_fundamental_score() call were not updated.
+
+This hotfix changes both.
+
+Do not commit/tag until the signature test and real AAPL/SLDE/CRWD run pass.

@@ -1,0 +1,55 @@
+[
+  {
+    "name": "control_smart_thermostat",
+    "reason": "Existing tools only handle desktop apps, browser, and local files. No tool exists for discovering, reading, or controlling smart home devices like thermostats via HomeKit, Matter, or vendor APIs.",
+    "description": "Discover and control smart thermostats on the local network. Supports reading current temperature, setting target temperature, and checking device status. Works with HomeKit, Matter, and major vendor APIs (Ecobee, Nest, Honeywell, etc.) via local network or cloud endpoints configured by the user.",
+    "suggested_agent": "desktop",
+    "inputs": {
+      "action": {
+        "type": "string",
+        "description": "Action to perform: 'get_temperature', 'set_temperature', 'get_status', 'discover_devices'",
+        "enum": [
+          "get_temperature",
+          "set_temperature",
+          "get_status",
+          "discover_devices"
+        ]
+      },
+      "device_id": {
+        "type": "string",
+        "description": "Optional device identifier. If omitted, uses the bedroom thermostat if previously configured."
+      },
+      "target_temperature": {
+        "type": "number",
+        "description": "Target temperature in degrees (F or C based on device settings). Required for set_temperature action."
+      },
+      "unit": {
+        "type": "string",
+        "description": "Temperature unit for get_temperature response.",
+        "enum": [
+          "fahrenheit",
+          "celsius"
+        ]
+      }
+    },
+    "expected_output": {
+      "current_temperature": "number",
+      "target_temperature": "number",
+      "unit": "string",
+      "device_name": "string",
+      "device_id": "string",
+      "status": "string",
+      "success": "boolean"
+    },
+    "privacy": "local_only",
+    "confirmation_required": true,
+    "user_request": "Every evening, get the temperature from my bedroom smart thermostat and adjust it to 68 degrees.",
+    "id": "mcp_87840cd22105",
+    "status": "pending",
+    "created_at": "2026-08-15T03:31:30.654943+00:00",
+    "updated_at": "2026-08-15T03:31:30.654956+00:00",
+    "metadata": {
+      "requested_by": "nemotron"
+    }
+  }
+]

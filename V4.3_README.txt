@@ -1,0 +1,57 @@
+BABY INVESTOR V4.3 — Portfolio Analytics + Backtesting Foundation
+
+New modules
+-----------
+investor/portfolio_engine.py
+investor/historical_market_data.py
+
+Portfolio analytics
+-------------------
+- annualized historical return and volatility
+- Sharpe ratio
+- beta vs benchmark
+- maximum drawdown
+- covariance/correlation
+- average pairwise correlation
+- concentration HHI
+- effective number of positions
+- diversification ratio
+- marginal/component/percentage risk contribution
+- benchmark return/volatility/drawdown
+- excess return
+- tracking error
+- information ratio
+
+Backtesting
+-----------
+- historical fixed-target portfolio simulation
+- monthly / quarterly / annual / no rebalance
+- transaction costs in basis points
+- explicit turnover
+- benchmark comparison
+- no order execution
+
+Data semantics
+--------------
+V4.3 uses auto_adjust=True for historical return calculations so splits and
+dividends are reflected in the Yahoo-derived price series. Yahoo/yfinance is
+still explicitly prototype/secondary-grade and is isolated behind a provider
+adapter so a primary market-data source can replace it later.
+
+Safety / validity
+-----------------
+- long-only weights in V4.3
+- no real-money orders
+- no optimizer pretending to know future returns
+- no future data is used to choose weights inside the backtester
+- historical performance is not treated as a forecast
+- transaction costs are modeled
+- taxes, bid/ask spread, market impact and detailed slippage are not yet modeled
+
+Important next evolution
+------------------------
+V4.3 is the analytics foundation, not yet a strategy backtester. The next
+backtesting layer should add walk-forward strategy signals, point-in-time
+fundamental/event data, survivorship-bias controls, delisting handling,
+benchmark-consistent universes, and stronger execution/slippage assumptions
+before historical strategy results are trusted.

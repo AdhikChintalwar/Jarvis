@@ -1,0 +1,20 @@
+BABY INVESTOR V7.5 — VALIDATION, CALIBRATION & ATTRIBUTION HARDENING
+
+Purpose
+- Audit V7 results before changing production scoring.
+- Align portfolio and benchmark windows.
+- Separate warm-up market history from the portfolio accounting window.
+- Add exposure/cash-drag, drawdown-window, score-rank, and symbol-trading diagnostics.
+- Preserve deterministic authority: AI scoring = 0%, AI execution = 0%.
+
+Critical V7 finding
+The uploaded V7 report's equity curve begins 2022-11-29 while its first signal is 2024-03-28 and first execution is 2024-04-01. V7 therefore included a long idle-cash interval in portfolio CAGR/volatility/Sharpe, while SPY/QQQ metrics were produced from the requested benchmark window. V7.5 fixes the accounting-window boundary and records aligned benchmark curves.
+
+Claims
+This remains a bounded fixed-current-large-cap sample with INCOMPLETE survivorship coverage. It is not a whole-market track record and must not be used to claim proven investment skill. Score calibration is diagnostic only; no score weights are automatically optimized.
+
+Run existing report audit:
+  python investor_v7_5_report_audit.py data/v7_real_investment_test.json
+
+Run contract:
+  python investor_v7_5_contract_test.py

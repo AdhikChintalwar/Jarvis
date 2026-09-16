@@ -1,119 +1,286 @@
-import json
-import ollama
+from __future__ import annotations
 
-MODEL = "qwen3:30b"
+import re
 
 
-def fast_route(task: str):
-    text = task.lower()
+def normalize(
+    text: str,
+) -> str:
+    text = text.lower().strip()
 
-    desktop_words = [
-        "open vs code", "open vscode", "open chrome", "open terminal",
-        "open finder", "open app", "open folder", "open project",
-        "coding setup", "ai setup", "research setup",
-        "battery", "cpu", "disk", "screenshot", "screen",
-        "lock mac", "what time"
+    text = re.sub(
+        r"[^\w\s']+",
+        " ",
+        text,
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text,
+    )
+
+    return text.strip()
+
+
+def fast_route(
+    task: str,
+) -> str | None:
+    """
+    Fast deterministic routing.
+
+    Obvious commands never use an LLM router.
+    """
+
+    text = normalize(task)
+
+    if not text:
+        return None
+
+    # =========================================================
+    # CURRENT SCREEN / CURRENT ACTIVITY
+    # =========================================================
+
+    screen_phrases = [
+        "what am i doing",
+        "what am i doing now",
+        "what am i looking at",
+        "what is on my screen",
+        "what's on my screen",
+        "what do you see",
+        "what do you see now",
+        "look at my screen",
+        "analyze my screen",
+        "analyse my screen",
+        "inspect my screen",
+        "look at this window",
+        "what is this window",
     ]
 
-    browser_words = [
-        "youtube", "google", "search", "videos", "video",
-        "tutorial", "tutorials", "website", "documentation",
-        "docs", "news", "online"
-    ]
-
-    coding_words = [
-        "debug", "fix this code", "write code", "python function",
-        "react component", "sql query", "explain this code",
-        "coding error", "programming"
-    ]
-
-    memory_words = [
-        "remember", "forget", "what do you remember",
-        "my preference", "preferences"
-    ]
-
-    if any(word in text for word in memory_words):
-        return "memory"
-
-    if any(word in text for word in browser_words):
-        return "browser"
-
-    if any(word in text for word in desktop_words):
+    if any(
+        phrase in text
+        for phrase in screen_phrases
+    ):
+        print(
+            "FAST ROUTER: desktop"
+        )
         return "desktop"
 
-    if any(word in text for word in coding_words):
+    # =========================================================
+    # WORKSPACE
+    # =========================================================
+
+    workspace_phrases = [
+        "what am i working on",
+        "what project am i working on",
+        "which project am i working on",
+        "current project",
+        "current workspace",
+        "workspace status",
+        "project status",
+        "recent files",
+        "recently changed files",
+        "what files changed",
+        "git branch",
+        "current branch",
+        "project path",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in workspace_phrases
+    ):
+        print(
+            "FAST ROUTER: workspace"
+        )
+        return "workspace"
+
+    # =========================================================
+    # TIME / MAC CONTROL
+    # =========================================================
+
+    desktop_phrases = [
+        "what time",
+        "what's the time",
+        "current time",
+        "volume up",
+        "volume down",
+        "mute",
+        "unmute",
+        "brightness up",
+        "brightness down",
+        "mission control",
+        "app switcher",
+        "spotlight",
+        "take screenshot",
+        "take a screenshot",
+        "screenshot",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in desktop_phrases
+    ):
+        print(
+            "FAST ROUTER: desktop"
+        )
+        return "desktop"
+
+    desktop_prefixes = [
+        "open ",
+        "close ",
+        "quit ",
+        "launch ",
+        "switch to ",
+    ]
+
+    if any(
+        text.startswith(prefix)
+        for prefix in desktop_prefixes
+    ):
+        print(
+            "FAST ROUTER: desktop"
+        )
+        return "desktop"
+
+    # =========================================================
+    # BROWSER
+    # =========================================================
+
+    browser_phrases = [
+        "search google",
+        "google ",
+        "search youtube",
+        "youtube ",
+        "search the web",
+        "search web",
+        "find online",
+        "look online",
+        "browse ",
+        "open website",
+        "go to website",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in browser_phrases
+    ):
+        print(
+            "FAST ROUTER: browser"
+        )
+        return "browser"
+
+    # =========================================================
+    # CODING
+    # =========================================================
+
+    coding_phrases = [
+        "write code",
+        "write python",
+        "write javascript",
+        "write react",
+        "debug",
+        "fix this code",
+        "fix my code",
+        "code error",
+        "traceback",
+        "syntax error",
+        "compile",
+        "refactor",
+        "github",
+        "git commit",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in coding_phrases
+    ):
+        print(
+            "FAST ROUTER: coding"
+        )
         return "coding"
+
+    # =========================================================
+    # MEMORY
+    # =========================================================
+
+    memory_phrases = [
+        "remember that",
+        "remember this",
+        "remember my",
+        "what do you remember",
+        "do you remember",
+        "forget that",
+        "forget my",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in memory_phrases
+    ):
+        print(
+            "FAST ROUTER: memory"
+        )
+        return "memory"
+
+    # =========================================================
+    # COMPLEX REQUEST
+    # =========================================================
+
+    complex_phrases = [
+        "figure out",
+        "investigate",
+        "compare",
+        "analyze why",
+        "analyse why",
+        "research",
+        "plan how",
+        "best way",
+        "help me decide",
+        "work together",
+        "use multiple agents",
+    ]
+
+    if any(
+        phrase in text
+        for phrase in complex_phrases
+    ):
+        print(
+            "FAST ROUTER: planner"
+        )
+        return "planner"
 
     return None
 
 
-def extract_json(text: str):
-    start = text.find("{")
-    end = text.rfind("}") + 1
+def route_task(
+    task: str,
+) -> str:
+    agent = fast_route(task)
 
-    if start == -1 or end == 0:
-        raise ValueError("No JSON found")
+    if agent is not None:
+        return agent
 
-    return json.loads(text[start:end])
-
-
-def choose_agent(task: str) -> str:
-    fast_agent = fast_route(task)
-
-    if fast_agent:
-        print("FAST ROUTER:", fast_agent)
-        return fast_agent
-
-    prompt = f"""
-You are Baby's intelligent Router.
-
-Choose ONE agent.
-
-Available agents:
-- desktop
-- browser
-- coding
-- memory
-- planner
-
-desktop:
-Computer control, apps, folders, projects, profiles, screenshots, battery, CPU, disk, time.
-
-browser:
-Internet, Google, YouTube, videos, tutorials, websites, documentation, online research.
-
-coding:
-Writing code, debugging code, explaining code, GitHub, programming questions.
-
-memory:
-Remembering, forgetting, preferences, long-term memory.
-
-planner:
-Complex planning or anything unclear.
-
-Return ONLY JSON.
-
-Example:
-{{
-  "agent": "browser"
-}}
-
-Task:
-{task}
-"""
-
-    response = ollama.chat(
-        model=MODEL,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+    print(
+        "FAST ROUTER: planner fallback"
     )
 
-    raw = response["message"]["content"].strip()
+    return "planner"
 
-    print("LLM ROUTER:", raw)
 
-    try:
-        return extract_json(raw)["agent"]
-    except Exception:
-        return "planner"
+def route(
+    task: str,
+) -> str:
+    return route_task(task)
+
+
+def select_agent(
+    task: str,
+) -> str:
+    return route_task(task)
+
+
+def choose_agent(
+    task: str,
+) -> str:
+    return route_task(task)

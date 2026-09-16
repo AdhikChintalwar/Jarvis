@@ -1,0 +1,28 @@
+BABY INVESTOR V4.4.1 — Fast Evidence-Grounded Committee
+
+Why
+---
+V4.4 governance passed live, but the default Nemotron deep-thinking call was slow
+and claim integrity was 57.1%, 57.1%, and 14.3% for SLDE/AAPL/CRWD.
+
+V4.4.1 changes
+--------------
+- Final committee defaults to Nemotron thinking=OFF.
+- Deep thinking is escalation-only: explicit deep_review=True, or one recovery
+  attempt if the fast call fails to return usable JSON.
+- The LLM receives compact committee evidence instead of the full registry.
+- Compact evidence is restricted to deterministic summary metrics and selected
+  primary-financial values.
+- Prompts require exact evidence IDs and exact numeric values.
+- Nemotron does not recalculate the deterministic ranking baseline.
+- Deterministic governance, risk ceilings, hard overrides, claim validation,
+  numeric validation, semantic validation, and confidence ceilings remain intact.
+- Nemotron cache is enabled in the real test. Identical evidence fingerprints
+  should produce zero network calls on a repeat run.
+- committee_score remains research-attractiveness synthesis, not predicted return.
+- No brokerage/order execution is added.
+
+Expected behavior
+-----------------
+CRWD's VERY_HIGH/extreme-volatility hard-risk constraint remains sovereign.
+Unsupported claims should fall materially versus V4.4.

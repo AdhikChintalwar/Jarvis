@@ -1,0 +1,319 @@
+{"type": "app_started", "data": {}, "timestamp": "2026-06-29T23:03:32.785341"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-06-29T23:06:28.870198"}
+{"type": "app_started", "data": {}, "timestamp": "2026-06-29T23:06:41.262468"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-06-30T00:21:11.189009"}
+{"type": "session_started", "data": {}, "timestamp": "2026-06-30T00:21:11.189424"}
+{"type": "speech_recognized", "data": {"text": "Find me good Python videos."}, "timestamp": "2026-06-30T00:21:16.881987"}
+{"type": "tasks_split", "data": {"tasks": ["Find me good Python videos"]}, "timestamp": "2026-06-30T00:21:24.949471"}
+{"type": "agent_selected", "data": {"agent": "browser"}, "timestamp": "2026-06-30T00:21:24.950442"}
+{"type": "tool_started", "data": {"tool": "get_youtube_video_details", "target": "Python beginner tutorial"}, "timestamp": "2026-06-30T00:21:51.846436"}
+{"type": "tool_finished", "data": {"tool": "get_youtube_video_details", "target": "Python beginner tutorial"}, "timestamp": "2026-06-30T00:21:59.683555"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-06-30T00:22:27.655636"}
+{"type": "app_started", "data": {}, "timestamp": "2026-06-30T01:06:23.740738"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-06-30T01:06:26.233065"}
+{"type": "session_started", "data": {}, "timestamp": "2026-06-30T01:06:26.233514"}
+{"type": "speech_recognized", "data": {"text": "What's the time now."}, "timestamp": "2026-06-30T01:06:31.518521"}
+{"type": "tasks_split", "data": {"tasks": ["What's the time now"]}, "timestamp": "2026-06-30T01:06:39.224695"}
+{"type": "agent_selected", "data": {"agent": "desktop"}, "timestamp": "2026-06-30T01:06:41.295828"}
+{"type": "tool_started", "data": {"tool": "current_time", "target": "time"}, "timestamp": "2026-06-30T01:06:43.374535"}
+{"type": "tool_finished", "data": {"tool": "current_time", "target": "time"}, "timestamp": "2026-06-30T01:06:43.730024"}
+{"type": "speech_recognized", "data": {"text": "The."}, "timestamp": "2026-06-30T01:06:50.663686"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-06-30T01:06:53.876530"}
+{"type": "app_started", "data": {}, "timestamp": "2026-06-30T01:13:42.089402"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-06-30T01:13:42.090236"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-06-30T01:13:44.208194"}
+{"type": "session_started", "data": {}, "timestamp": "2026-06-30T01:13:44.208471"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-06-30T01:13:45.953317"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-06-30T01:13:48.414765"}
+{"type": "speech_recognized", "data": {"text": "\u5927\u697c\u3002"}, "timestamp": "2026-06-30T01:13:48.415085"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-06-30T01:13:48.820563"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-06-30T01:14:00.343112"}
+{"type": "speech_recognized", "data": {"text": "What's the time now."}, "timestamp": "2026-06-30T01:14:00.343501"}
+{"type": "tasks_split", "data": {"tasks": ["What's the time now."]}, "timestamp": "2026-06-30T01:14:10.203318"}
+{"type": "agent_selected", "data": {"agent": "desktop"}, "timestamp": "2026-06-30T01:14:13.160662"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-06-30T01:14:13.206483"}
+{"type": "app_started", "data": {}, "timestamp": "2026-07-13T22:06:03.938118"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-07-13T22:06:03.943498"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-07-13T22:06:07.018943"}
+{"type": "session_started", "data": {}, "timestamp": "2026-07-13T22:06:07.019324"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:06:08.599389"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-07-13T22:06:08.600025"}
+{"type": "app_started", "data": {}, "timestamp": "2026-07-13T22:07:37.599079"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-07-13T22:07:37.599744"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-07-13T22:07:39.598856"}
+{"type": "session_started", "data": {}, "timestamp": "2026-07-13T22:07:39.599284"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:07:41.174745"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-07-13T22:07:43.180865"}
+{"type": "speech_recognized", "data": {"text": "on\u3002"}, "timestamp": "2026-07-13T22:07:43.181172"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:07:43.586473"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-07-13T22:07:55.550364"}
+{"type": "speech_recognized", "data": {"text": "What project am I working on."}, "timestamp": "2026-07-13T22:07:55.550703"}
+{"type": "tasks_split", "data": {"tasks": ["What project am I working on"]}, "timestamp": "2026-07-13T22:08:13.558558"}
+{"type": "agent_selected", "data": {"agent": "workspace"}, "timestamp": "2026-07-13T22:08:13.559645"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:08:36.487811"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-07-13T22:08:42.254269"}
+{"type": "speech_recognized", "data": {"text": "\u6211\u8def\u6765\u4e0b\u6316\u51fa\u8981\u5b8c\u4e86\u3002"}, "timestamp": "2026-07-13T22:08:42.254522"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:08:42.659876"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-07-13T22:08:55.236542"}
+{"type": "speech_recognized", "data": {"text": "A is normal."}, "timestamp": "2026-07-13T22:08:55.236908"}
+{"type": "tasks_split", "data": {"tasks": ["A is normal."]}, "timestamp": "2026-07-13T22:08:59.660467"}
+{"type": "agent_selected", "data": {"agent": "planner"}, "timestamp": "2026-07-13T22:09:04.469933"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-07-13T22:09:12.503661"}
+{"type": "notification_sent", "data": {"title": "Baby Test", "message": "The notification system is working.", "subtitle": null}, "timestamp": "2026-07-28T20:42:17.476380"}
+{"type": "notification_sent", "data": {"title": "Baby Test", "message": "The notification system is working.", "subtitle": null}, "timestamp": "2026-07-28T20:42:26.368089"}
+{"type": "app_started", "data": {}, "timestamp": "2026-07-28T23:00:49.400293"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-07-28T23:00:49.402861"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-07-28T23:01:03.319048"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-11T21:22:24.772967"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-11T21:22:24.776317"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-08-11T21:24:40.354160"}
+{"type": "session_started", "data": {}, "timestamp": "2026-08-11T21:24:40.354527"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-11T21:24:40.357587"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-11T21:24:45.975014"}
+{"type": "speech_recognized", "data": {"text": "I asked some personal questions You would have told something in memory now."}, "timestamp": "2026-08-11T21:24:45.975356"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-11T21:24:53.725338"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-11T21:25:56.970894"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-11T21:25:56.971470"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-08-11T21:26:00.492332"}
+{"type": "session_started", "data": {}, "timestamp": "2026-08-11T21:26:00.492982"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-11T21:26:00.495387"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-11T21:26:03.039682"}
+{"type": "speech_recognized", "data": {"text": "D Ja."}, "timestamp": "2026-08-11T21:26:03.039993"}
+{"type": "tasks_split", "data": {"tasks": ["D Ja."]}, "timestamp": "2026-08-11T21:26:11.901375"}
+{"type": "agent_selected", "data": {"agent": "coding"}, "timestamp": "2026-08-11T21:26:17.185033"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-11T21:26:36.028205"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:07.400994"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.0045}, "timestamp": "2026-08-14T23:13:07.620934"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:08.940367"}
+{"type": "speech_ended", "data": {"duration": 0.84}, "timestamp": "2026-08-14T23:13:09.480293"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:09.480609"}
+{"type": "speech_rejected", "data": {"text": "I.", "reason": "low_quality_transcription"}, "timestamp": "2026-08-14T23:13:09.501165"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:09.501507"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006358141090195895}, "timestamp": "2026-08-14T23:13:09.720886"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:11.340746"}
+{"type": "speech_ended", "data": {"duration": 1.11}, "timestamp": "2026-08-14T23:13:12.150625"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:12.151677"}
+{"type": "speech_final", "data": {"text": "Hello."}, "timestamp": "2026-08-14T23:13:12.185248"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:12.185613"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005565291668642349}, "timestamp": "2026-08-14T23:13:12.390914"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:15.330541"}
+{"type": "speech_ended", "data": {"duration": 1.08}, "timestamp": "2026-08-14T23:13:16.110500"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:16.111470"}
+{"type": "speech_final", "data": {"text": "Hello."}, "timestamp": "2026-08-14T23:13:16.143985"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:16.144463"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006245529758339335}, "timestamp": "2026-08-14T23:13:16.350426"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:19.860216"}
+{"type": "speech_ended", "data": {"duration": 1.77}, "timestamp": "2026-08-14T23:13:21.330857"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:21.332207"}
+{"type": "speech_final", "data": {"text": "What am I working on."}, "timestamp": "2026-08-14T23:13:21.370642"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:21.371040"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006475936744373441}, "timestamp": "2026-08-14T23:13:21.600611"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:26.640256"}
+{"type": "speech_ended", "data": {"duration": 1.56}, "timestamp": "2026-08-14T23:13:27.900304"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:27.900952"}
+{"type": "speech_final", "data": {"text": "What's the time now."}, "timestamp": "2026-08-14T23:13:27.928763"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:27.929080"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006875583295956176}, "timestamp": "2026-08-14T23:13:28.140476"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:30.150232"}
+{"type": "speech_ended", "data": {"duration": 1.5}, "timestamp": "2026-08-14T23:13:31.350003"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:31.350366"}
+{"type": "speech_final", "data": {"text": "Open Google."}, "timestamp": "2026-08-14T23:13:31.372255"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:31.372591"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.007013142431125397}, "timestamp": "2026-08-14T23:13:31.590131"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:36.720056"}
+{"type": "speech_ended", "data": {"duration": 1.38}, "timestamp": "2026-08-14T23:13:37.800301"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:37.801236"}
+{"type": "speech_rejected", "data": {"text": "The.", "reason": "low_quality_transcription"}, "timestamp": "2026-08-14T23:13:37.826893"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:37.827251"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.0066228498252563035}, "timestamp": "2026-08-14T23:13:38.040382"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:41.249734"}
+{"type": "speech_ended", "data": {"duration": 0.9}, "timestamp": "2026-08-14T23:13:41.850358"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:41.851636"}
+{"type": "speech_final", "data": {"text": "Yes."}, "timestamp": "2026-08-14T23:13:41.880811"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:41.881169"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006068693635027729}, "timestamp": "2026-08-14T23:13:42.090061"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:13:42.599804"}
+{"type": "speech_ended", "data": {"duration": 1.14}, "timestamp": "2026-08-14T23:13:43.440239"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:13:43.441361"}
+{"type": "speech_rejected", "data": {"text": "The.", "reason": "low_quality_transcription"}, "timestamp": "2026-08-14T23:13:43.471268"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:43.471655"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006469953758908589}, "timestamp": "2026-08-14T23:13:43.680408"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:13:49.710192"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:49.710922"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.0069338563673706855}, "timestamp": "2026-08-14T23:13:49.920268"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:13:55.949599"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:13:55.950063"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005831361558373325}, "timestamp": "2026-08-14T23:13:56.159808"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:14:02.189782"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:14:02.190496"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006545652060018528}, "timestamp": "2026-08-14T23:14:02.399815"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:14:07.739605"}
+{"type": "speech_ended", "data": {"duration": 0.9}, "timestamp": "2026-08-14T23:14:08.339463"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:14:08.339927"}
+{"type": "speech_final", "data": {"text": "Yeah."}, "timestamp": "2026-08-14T23:14:08.359315"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:14:08.359634"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.0075406542676466504}, "timestamp": "2026-08-14T23:14:08.579387"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-14T23:14:18.128966"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:14:18.129767"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-14T23:14:28.125906"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-14T23:15:47.066294"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:15:47.066701"}
+{"type": "wake_detected", "data": {"wake_word": "hey_jarvis", "score": 0.9709934592247009}, "timestamp": "2026-08-14T23:15:48.818915"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-08-14T23:15:48.819653"}
+{"type": "session_started", "data": {}, "timestamp": "2026-08-14T23:15:48.819964"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:15:48.822646"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:15:48.822972"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006366092616725441}, "timestamp": "2026-08-14T23:15:49.025067"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:15:51.994550"}
+{"type": "speech_ended", "data": {"duration": 1.5}, "timestamp": "2026-08-14T23:15:53.194369"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:15:53.194730"}
+{"type": "speech_final", "data": {"text": "What am I working on."}, "timestamp": "2026-08-14T23:15:53.224251"}
+{"type": "speech_recognized", "data": {"text": "What am I working on."}, "timestamp": "2026-08-14T23:15:53.224821"}
+{"type": "tasks_split", "data": {"tasks": ["What am I working on."]}, "timestamp": "2026-08-14T23:16:04.380029"}
+{"type": "task_started", "data": {"task": "What am I working on."}, "timestamp": "2026-08-14T23:16:04.380953"}
+{"type": "agent_selected", "data": {"agent": "desktop"}, "timestamp": "2026-08-14T23:16:13.372724"}
+{"type": "tool_started", "data": {"tool": "analyze_screen", "target": "what am I working on"}, "timestamp": "2026-08-14T23:16:39.425060"}
+{"type": "tool_finished", "data": {"tool": "analyze_screen", "target": "what am I working on"}, "timestamp": "2026-08-14T23:16:50.208750"}
+{"type": "task_finished", "data": {"task": "What am I working on.", "tool": "analyze_screen"}, "timestamp": "2026-08-14T23:17:06.753558"}
+{"type": "session_ended", "data": {"reason": "timeout"}, "timestamp": "2026-08-14T23:17:07.012320"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:17:08.544808"}
+{"type": "wake_detected", "data": {"wake_word": "hey_jarvis", "score": 0.9709934592247009}, "timestamp": "2026-08-14T23:17:08.553613"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-08-14T23:17:08.553822"}
+{"type": "session_started", "data": {}, "timestamp": "2026-08-14T23:17:08.553903"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:17:08.554201"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:17:08.554323"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006054143925555705}, "timestamp": "2026-08-14T23:17:08.764207"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:17:13.232733"}
+{"type": "speech_ended", "data": {"duration": 0.72}, "timestamp": "2026-08-14T23:17:13.652971"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:17:13.653528"}
+{"type": "speech_final", "data": {"text": "Yes."}, "timestamp": "2026-08-14T23:17:13.755168"}
+{"type": "speech_recognized", "data": {"text": "Yes."}, "timestamp": "2026-08-14T23:17:13.755524"}
+{"type": "tasks_split", "data": {"tasks": ["Yes."]}, "timestamp": "2026-08-14T23:17:17.528871"}
+{"type": "task_started", "data": {"task": "Yes."}, "timestamp": "2026-08-14T23:17:17.529317"}
+{"type": "agent_selected", "data": {"agent": "browser"}, "timestamp": "2026-08-14T23:17:23.910226"}
+{"type": "tool_started", "data": {"tool": "search_google", "target": "Yes"}, "timestamp": "2026-08-14T23:17:45.029192"}
+{"type": "tool_finished", "data": {"tool": "search_google", "target": "Yes"}, "timestamp": "2026-08-14T23:17:45.946350"}
+{"type": "task_finished", "data": {"task": "Yes.", "tool": "search_google"}, "timestamp": "2026-08-14T23:17:45.947170"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:17:46.203292"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:17:46.224653"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005584506180288372}, "timestamp": "2026-08-14T23:17:46.446060"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:17:47.792301"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-14T23:17:48.553302"}
+{"type": "mcp_tool_proposed", "data": {"proposal_id": "mcp_87840cd22105", "name": "control_smart_thermostat", "reason": "Existing tools only handle desktop apps, browser, and local files. No tool exists for discovering, reading, or controlling smart home devices like thermostats via HomeKit, Matter, or vendor APIs."}, "timestamp": "2026-08-14T23:31:30.655668"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-14T23:42:49.113027"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:42:49.113723"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-14T23:44:19.348932"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-14T23:44:23.833682"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:44:23.834117"}
+{"type": "wake_detected", "data": {"wake_word": "hey_jarvis", "score": 0.9941707849502563}, "timestamp": "2026-08-14T23:44:32.567378"}
+{"type": "wake_detected", "data": {}, "timestamp": "2026-08-14T23:44:32.568173"}
+{"type": "session_started", "data": {}, "timestamp": "2026-08-14T23:44:32.568625"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:44:32.571413"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:44:32.571536"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005987835743644653}, "timestamp": "2026-08-14T23:44:32.774158"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:44:33.463393"}
+{"type": "speech_ended", "data": {"duration": 1.92}, "timestamp": "2026-08-14T23:44:35.083595"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:44:35.084299"}
+{"type": "speech_final", "data": {"text": "What am I doing now."}, "timestamp": "2026-08-14T23:44:35.131542"}
+{"type": "speech_recognized", "data": {"text": "What am I doing now."}, "timestamp": "2026-08-14T23:44:35.131936"}
+{"type": "tasks_split", "data": {"tasks": ["What am I doing now."]}, "timestamp": "2026-08-14T23:44:35.132338"}
+{"type": "task_started", "data": {"task": "What am I doing now."}, "timestamp": "2026-08-14T23:44:35.132722"}
+{"type": "agent_selected", "data": {"agent": "planner"}, "timestamp": "2026-08-14T23:44:35.132897"}
+{"type": "task_finished", "data": {"task": "What am I doing now.", "tool": "planner"}, "timestamp": "2026-08-14T23:44:50.668043"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:44:50.922851"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:44:50.924469"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006151416715436587}, "timestamp": "2026-08-14T23:44:51.133597"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:44:57.163440"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:44:57.164454"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:44:57.164901"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006863537035765691}, "timestamp": "2026-08-14T23:44:57.373399"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:45:03.403390"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:03.404391"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:03.404855"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.007044542191094483}, "timestamp": "2026-08-14T23:45:03.613659"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:45:06.493526"}
+{"type": "speech_ended", "data": {"duration": 0.81}, "timestamp": "2026-08-14T23:45:07.003214"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:45:07.003542"}
+{"type": "speech_final", "data": {"text": "Okay."}, "timestamp": "2026-08-14T23:45:07.035936"}
+{"type": "speech_recognized", "data": {"text": "Okay."}, "timestamp": "2026-08-14T23:45:07.036357"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:07.037027"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:07.037119"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005632186747211185}, "timestamp": "2026-08-14T23:45:07.243323"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:45:13.273264"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:13.273812"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:13.274201"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.00610819878306918}, "timestamp": "2026-08-14T23:45:13.483190"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:45:19.513126"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:19.513490"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:19.513693"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006047725839008547}, "timestamp": "2026-08-14T23:45:19.723223"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:45:23.743631"}
+{"type": "speech_ended", "data": {"duration": 0.75}, "timestamp": "2026-08-14T23:45:24.193453"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:45:24.194449"}
+{"type": "speech_final", "data": {"text": "Yes."}, "timestamp": "2026-08-14T23:45:24.219928"}
+{"type": "speech_recognized", "data": {"text": "Yes."}, "timestamp": "2026-08-14T23:45:24.220359"}
+{"type": "tasks_split", "data": {"tasks": ["Yes."]}, "timestamp": "2026-08-14T23:45:24.221120"}
+{"type": "task_started", "data": {"task": "Yes."}, "timestamp": "2026-08-14T23:45:24.221545"}
+{"type": "agent_selected", "data": {"agent": "planner"}, "timestamp": "2026-08-14T23:45:24.221820"}
+{"type": "task_finished", "data": {"task": "Yes.", "tool": "planner"}, "timestamp": "2026-08-14T23:45:29.967376"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:30.222784"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:30.223564"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005717248844813424}, "timestamp": "2026-08-14T23:45:30.433249"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:45:31.213467"}
+{"type": "speech_ended", "data": {"duration": 1.05}, "timestamp": "2026-08-14T23:45:31.963602"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:45:31.964645"}
+{"type": "speech_rejected", "data": {"text": "The.", "reason": "low_quality_transcription"}, "timestamp": "2026-08-14T23:45:31.994809"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:31.995200"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:31.995394"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.005700725603865132}, "timestamp": "2026-08-14T23:45:32.203390"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:45:34.723168"}
+{"type": "speech_ended", "data": {"duration": 1.29}, "timestamp": "2026-08-14T23:45:35.713421"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:45:35.714224"}
+{"type": "speech_final", "data": {"text": "What are you doing."}, "timestamp": "2026-08-14T23:45:35.742083"}
+{"type": "speech_recognized", "data": {"text": "What are you doing."}, "timestamp": "2026-08-14T23:45:35.742644"}
+{"type": "tasks_split", "data": {"tasks": ["What are you doing."]}, "timestamp": "2026-08-14T23:45:35.743582"}
+{"type": "task_started", "data": {"task": "What are you doing."}, "timestamp": "2026-08-14T23:45:35.743997"}
+{"type": "agent_selected", "data": {"agent": "planner"}, "timestamp": "2026-08-14T23:45:35.744132"}
+{"type": "task_finished", "data": {"task": "What are you doing.", "tool": "planner"}, "timestamp": "2026-08-14T23:45:53.621408"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:45:53.874891"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:45:53.875555"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006325271747121316}, "timestamp": "2026-08-14T23:45:54.103192"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:46:00.133131"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:00.133838"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:00.134123"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.00537875817994673}, "timestamp": "2026-08-14T23:46:00.343093"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:46:06.373084"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:06.373436"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:06.373519"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006041749243946159}, "timestamp": "2026-08-14T23:46:06.583197"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:46:11.953143"}
+{"type": "speech_ended", "data": {"duration": 0.93}, "timestamp": "2026-08-14T23:46:12.583156"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:46:12.583619"}
+{"type": "speech_rejected", "data": {"text": "The.", "reason": "low_quality_transcription"}, "timestamp": "2026-08-14T23:46:12.604486"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:12.604942"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:12.605054"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.007104234051105674}, "timestamp": "2026-08-14T23:46:12.823134"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:46:18.853300"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:18.853778"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:18.853962"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006059810832974315}, "timestamp": "2026-08-14T23:46:19.063426"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:46:25.093468"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:25.094001"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:25.094208"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.008005370367803846}, "timestamp": "2026-08-14T23:46:25.303869"}
+{"type": "speech_timeout", "data": {}, "timestamp": "2026-08-14T23:46:31.333429"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:31.334343"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:31.334672"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.006563060014160959}, "timestamp": "2026-08-14T23:46:31.543263"}
+{"type": "speech_started", "data": {}, "timestamp": "2026-08-14T23:46:34.333397"}
+{"type": "speech_ended", "data": {"duration": 0.81}, "timestamp": "2026-08-14T23:46:34.843513"}
+{"type": "asr_processing", "data": {}, "timestamp": "2026-08-14T23:46:34.845090"}
+{"type": "speech_final", "data": {"text": "Okay."}, "timestamp": "2026-08-14T23:46:34.876925"}
+{"type": "speech_recognized", "data": {"text": "Okay."}, "timestamp": "2026-08-14T23:46:34.877347"}
+{"type": "asr_listening", "data": {}, "timestamp": "2026-08-14T23:46:34.878236"}
+{"type": "listener_state", "data": {"state": "calibrating"}, "timestamp": "2026-08-14T23:46:34.878487"}
+{"type": "listener_state", "data": {"state": "listening", "threshold": 0.00773466866628196}, "timestamp": "2026-08-14T23:46:35.083295"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-14T23:46:38.303962"}
+{"type": "app_started", "data": {}, "timestamp": "2026-08-14T23:47:10.188957"}
+{"type": "wake_listening", "data": {}, "timestamp": "2026-08-14T23:47:10.189449"}
+{"type": "app_closed", "data": {}, "timestamp": "2026-08-14T23:47:11.696391"}

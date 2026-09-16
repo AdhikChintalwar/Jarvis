@@ -1,0 +1,7 @@
+BABY INVESTOR V4.5.2 — Nemotron Reliability
+Transient 429/500/502/503/504 and common timeout/connection failures receive up
+to four transport attempts with 5s, 15s, 30s backoff. Non-transient auth/config
+errors are not blindly retried. If the final deep committee remains unavailable,
+Baby preserves deterministic governance, marks DEEP_COMMITTEE_UNAVAILABLE, and
+forces AI-layer confidence to zero instead of inventing a conclusion.
+No investment-analysis formulas changed.

@@ -1,0 +1,13 @@
+INSTALL / MIGRATION
+1. Back up your current investor folder or commit it.
+2. Extract this ZIP at the Baby/Jarvis project root. It contains the complete investor folder reconstructed from the current V3.6.2 base plus every stable overlay through V4.5.8, then the V4.6 architecture.
+3. Keep your existing .env. This archive intentionally contains no .env or secrets.
+4. Run:
+   python investor_v4_6_contract_test.py
+   python investor_v4_6_ai_authority_test.py
+   python investor_v4_6_real_test.py AAPL SLDE CRWD
+5. Optional sizing demonstration only:
+   python investor_v4_6_real_test.py AAPL SLDE CRWD --account 100000
+
+V4.6 changes the old committee governance semantics: Nemotron may still research/red-team, but FinalCommitteeGuard gives it zero score and zero decision authority.
+Do not tag V4.6 until the real test passes on the user's machine.

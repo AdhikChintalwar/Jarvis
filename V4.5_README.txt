@@ -1,0 +1,10 @@
+BABY INVESTOR V4.5 — Deep Investment Reasoning Engine
+
+Pipeline:
+compact verified evidence -> deep bull/bear/red-team deliberation -> validation
+-> final deep Nemotron committee -> final claim validation -> deterministic guard.
+
+Two thinking=ON Nemotron calls are intentional for finalists. Unsupported
+deliberation claims are removed before the final committee. Hard-risk overrides
+and maximum decision ceilings remain deterministic and sovereign. Scores are
+research-attractiveness synthesis, not predicted returns. No order execution.

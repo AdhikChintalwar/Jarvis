@@ -1,0 +1,43 @@
+BABY INVESTOR V3.5.1 HOTFIX
+===========================
+
+Fixes the V3.5 committee evidence failure:
+
+KeyError: primary_financial.verified_financials.capex.value
+
+CAUSE
+-----
+EvidenceBuilder cleaned the full analyzer report before compression.
+The generic cleaner removes None values. Therefore a deliberately unresolved
+verified metric such as:
+
+capex = {
+    "value": None,
+    "status": "MATERIAL_DISAGREEMENT",
+    ...
+}
+
+lost its "value" key before the primary-financial compressor could preserve
+the explicit unresolved state.
+
+FIX
+---
+EvidenceBuilder now compresses first and cleans second.
+
+The primary-financial compressor therefore receives the original verified
+metric and constructs its provenance record with an explicit value field.
+The rest of the evidence is still cleaned after compression.
+
+This preserves the evidence-integrity distinction between:
+- field absent / not supplied
+- field explicitly unresolved with value=None
+
+TEST
+----
+python -m py_compile \
+  investor/committee/evidence_builder.py \
+  investor_v3_5_integration_test.py
+
+python investor_v3_5_integration_test.py
+
+DO NOT COMMIT until the integration test and real AAPL/SLDE/CRWD analysis pass.

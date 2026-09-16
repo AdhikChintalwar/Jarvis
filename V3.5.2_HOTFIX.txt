@@ -1,0 +1,24 @@
+BABY INVESTOR V3.5.2 HOTFIX
+===========================
+
+V3.5.1 fixed the first half of the bug by compressing before cleaning.
+However, the final _clean() call still removed:
+    "value": None
+
+from the already-compressed verified-financial record.
+
+V3.5.2 fixes the actual invariant:
+If a dictionary contains both "status" and "value", and value is explicitly
+None, _clean() preserves that null.
+
+This keeps:
+    {"value": None, "status": "MATERIAL_DISAGREEMENT", ...}
+distinct from a record where "value" was never supplied.
+
+Only evidence_builder.py changes from V3.5.1.
+
+TEST:
+python -m py_compile investor/committee/evidence_builder.py investor_v3_5_integration_test.py
+python investor_v3_5_integration_test.py
+
+Do not commit until the contract test passes.

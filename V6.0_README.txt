@@ -1,0 +1,30 @@
+BABY INVESTOR V6.0 — HISTORICAL VALIDATION & PAPER TRADING PLATFORM
+
+Integrated:
+- V5.5 SEC point-in-time historical evidence
+- historical deterministic DecisionEngine adapter
+- historical portfolio target generation
+- V5 next-bar/cost-aware execution
+- performance metrics: return/CAGR/volatility/downside/Sharpe/Sortino/max drawdown
+- walk-forward/OOS aggregation
+- benchmark hooks
+- explicit survivorship/universe-coverage disclosure
+- persistent SQLite paper broker and paper portfolio
+- market and limit paper orders
+- V6 audit report
+
+Hard invariants:
+- Production historical replay requires injected deterministic decision_fn.
+- No toy/LLM fallback scoring.
+- AI scoring authority = 0%.
+- AI execution authority = 0%.
+- Real-money execution = DISABLED.
+- PaperBroker contains no brokerage connector.
+- Incomplete universe coverage is labeled INCOMPLETE, never unbiased.
+- Future evidence remains blocked by V5 point-in-time policy.
+
+Remaining real-data gates:
+1. Live SEC replay across pre/post filing boundaries.
+2. Production DecisionEngine historical adapter using reconstructed V4.x evidence.
+3. Real dated US-equity membership/delisting source before claiming survivorship-free broad backtests.
+4. Large-scale OOS run after those data gates.

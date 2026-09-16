@@ -1,0 +1,6 @@
+BABY INVESTOR V4.5.4 — Cache Integrity
+Rejects stale/empty Nemotron committee caches and stale/empty deliberation caches.
+Invalid cache is ignored and refreshed from Nemotron. Empty final rankings can
+no longer be reported as a successful committee run. Existing retry/backoff,
+evidence validation and deterministic risk governance remain unchanged.
+No investment formulas changed.
