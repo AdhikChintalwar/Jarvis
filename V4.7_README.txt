@@ -1,0 +1,22 @@
+BABY INVESTOR V4.7 — Decision, Validation & Trade Research Foundation
+
+This stabilization release keeps deterministic decision authority sovereign and gives AI 0% scoring/execution authority.
+
+Major changes
+- Preserves upstream primary evidence authority: REVIEW/PERIOD_MISMATCH cannot be promoted to PASS.
+- Reconciles SMA20/SMA50/EMA20/RSI14 against raw OHLCV with canonical aliases.
+- Keeps genuinely independent cross-source validation UNKNOWN until a separate provider packet is supplied.
+- Separates pullback scenario targets from current-price upside targets.
+- Adds breakout scenario with trigger/invalidation and explicit risk-multiple scenario targets.
+- Adds current-setup status/reason.
+- Hard risk and VERY_HIGH/EXTREME risk remain sovereign over technical attractiveness.
+- Adds market source/as-of/history provenance.
+- Adds adversarial stabilization contract and live semantic invariants.
+- No existing financial/accounting/valuation/event/macro/unified-risk formulas changed.
+- Real-money execution remains outside the system and requires explicit human approval.
+
+Run
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_7_real_test.py AAPL SLDE CRWD

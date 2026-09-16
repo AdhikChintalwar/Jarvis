@@ -1,0 +1,13 @@
+BABY INVESTOR V4.7.1 — compatibility hotfix
+
+Fixes the V4.7 startup ImportError caused by renaming TradePlanV46 to TradePlanV47 while
+investor/__init__.py and older regression tests still imported TradePlanV46.
+
+TradePlanV46 is now a backward-compatible alias of TradePlanV47.
+No decision, validation, valuation, risk, technical, trade-level, or AI-authority formulas changed.
+
+Run:
+python investor_v4_6_contract_test.py
+python investor_v4_6_ai_authority_test.py
+python investor_v4_7_contract_test.py
+python investor_v4_7_real_test.py AAPL SLDE CRWD

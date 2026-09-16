@@ -479,8 +479,6 @@ class StockAnalyzer:
                 ),
                 risk=risk,
                 primary_financial=primary_financial,
-                accounting_quality=accounting_quality,
-                valuation=valuation,
             )
         )
 

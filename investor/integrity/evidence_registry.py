@@ -27,6 +27,27 @@ class EvidenceRegistry:
         "financial_health":
             "Baby financial health engine",
 
+        "accounting_quality":
+            "Baby accounting-quality engine",
+
+        "valuation":
+            "Baby valuation-intelligence engine",
+
+        "event_intelligence":
+            "Baby SEC/news event-intelligence engine",
+
+        "macro_regime":
+            "Baby macro-regime engine using FRED plus market proxies",
+
+        "advanced_market":
+            "Baby advanced-market intelligence engine",
+
+        "unified_risk":
+            "Baby deterministic unified-risk engine",
+
+        "liquidity_evidence":
+            "Baby deterministic liquidity evidence",
+
         "primary_financial":
             "SEC EDGAR/XBRL primary financial intelligence with dated Yahoo annual-statement validation",
 
@@ -76,6 +97,27 @@ class EvidenceRegistry:
 
         "financial_health":
             "high",
+
+        "accounting_quality":
+            "high",
+
+        "valuation":
+            "high",
+
+        "event_intelligence":
+            "high",
+
+        "macro_regime":
+            "high",
+
+        "advanced_market":
+            "medium",
+
+        "unified_risk":
+            "high",
+
+        "liquidity_evidence":
+            "medium",
 
         "primary_financial":
             "high",
