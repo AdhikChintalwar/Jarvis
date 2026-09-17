@@ -105,6 +105,52 @@ with tempfile.TemporaryDirectory() as td:
         and 'MAX_POSITION_PCT' in missing['failures'],
         'missing portfolio evidence fails closed'
     )
+
+    # V12 must be able to block a V11 candidate on portfolio risk
+    blocked_v11={
+        'symbol':'AAPL',
+        'schema_version':'11.0.1',
+        'decision':{
+            'state':'CANDIDATE',
+            'score':68,
+            'confidence':72,
+            'decision_grade_coverage':80,
+            'constraints':[]
+        },
+        'trade_intelligence':{
+            'setup_status':'AT_PULLBACK_ZONE',
+            'entry_triggered':True,
+            'paper_proposal':{
+                'notional':15000,
+                'risk_dollars':300,
+                'sector':'Technology'
+            },
+            'position':{}
+        },
+        'thesis':{
+            'hard_risk_override':False
+        },
+        'thesis_state':{
+            'state':'STABLE'
+        }
+    }
+
+    blocked_portfolio={
+        'account':{
+            'equity':100000,
+            'cash':50000
+        },
+        'positions':[]
+    }
+
+    blocked_pd=p.decision.evaluate(blocked_v11,blocked_portfolio)
+
+    ok(blocked_pd['status']=='BLOCKED','production decision blocked by portfolio')
+    ok(not blocked_pd['portfolio_gate']['eligible'],'blocked production gate')
+    ok('MAX_POSITION_PCT' in blocked_pd['portfolio_gate']['failures'],'blocked production reason')
+    ok(blocked_pd['execution']=='NONE','blocked production execution')
+    ok(blocked_pd['real_money']=='DISABLED','blocked production real money')
+
     etf=p.etf.evaluate('SPY',{'technical':{'metrics':{'price':600,'sma50':580,'sma200':550,'rsi14':60}},'macro_sector':{'regime':'RISK_ON'}});ok(etf['bull_weight']>0 and etf['fundamentals']=='NOT_APPLICABLE','ETF thesis')
     ex=p.positions.evaluate({'qty':10},{'invalidation':90,'target1':110,'target2':120},{'price':89,'hard_risk_override':False,'thesis_state':'STABLE'});ok(ex['action']=='EXIT_PROPOSAL' and ex['execution']=='EXPLICIT_CONFIRMATION_REQUIRED','exit proposal')
     ph=p.providers.assess({'SEC':{'configured':True,'authority':'PRIMARY'},'YAHOO':{'configured':True,'authority':'SECONDARY'}});ok(ph['status']=='PASS','provider health')
