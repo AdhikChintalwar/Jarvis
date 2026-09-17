@@ -1,104 +1,57 @@
-BABY INVESTOR V3.5 — PRIMARY FINANCIAL INTEGRATION
-==================================================
+JARVIS V12 — V11 -> V12 BRIDGE TEST PATCH
+===========================================
 
-This package was built against the investor/ source tree uploaded on 2026-09-15.
+Run everything from the root of your "Jarvis voice" project while (.venv) is active.
 
-WHAT CHANGES
-------------
-1. StockAnalyzer now runs PrimaryFinancialEngine before classification,
-   financial-health scoring, and stock scoring.
-2. Statement-derived Yahoo .info fundamentals are replaced by SEC-primary
-   verified values:
-      revenue
-      revenue growth
-      net income
-      net margin
-      operating margin
-      cash
-      debt
-      free cash flow
-      operating cash flow
-3. Missing or MATERIAL_DISAGREEMENT primary facts stay missing. The analyzer
-   does not revive an old Yahoo .info value for that metric.
-4. Yahoo remains the prototype source for market data, valuation fields,
-   beta, float/short data, etc.
-5. The full verified-financial provenance is attached to the analyzer report
-   as report["primary_financial"].
-6. Committee EvidenceBuilder carries compact value/source/status/confidence/
-   period records into Nemotron evidence.
-7. EvidenceRegistry treats primary_financial as high-reliability SEC-primary
-   evidence.
-8. Primary financial schema is bumped to 3.5.
+1. CREATE A GIT CHECKPOINT NOW
 
-INSTALL
--------
-From the project root, copy the package files over the same relative paths.
+   git status
+   git add -A
+   git commit -m "V12 production guardrails validated"
 
-TEST
-----
-python -m py_compile \
-  investor/analyzer.py \
-  investor/primary_data/integration_adapter.py \
-  investor/primary_data/primary_financial_engine.py \
-  investor/committee/evidence_builder.py \
-  investor/integrity/evidence_registry.py \
-  investor_v3_5_integration_test.py
+   If Git says there is nothing to commit, that is fine.
 
-python investor_v3_5_integration_test.py
+2. APPLY THE PATCH
 
-Then run real deterministic analysis:
-python - <<'PY'
-from investor.analyzer import StockAnalyzer
+   From the Jarvis project root, run:
 
-for ticker in ("AAPL", "SLDE", "CRWD"):
-    print("\n", "=" * 30, ticker, "=" * 30)
-    report = StockAnalyzer().analyze(ticker)
-    pf = report.get("primary_financial") or {}
-    verified = pf.get("verified_financials", {})
-    print("schema:", pf.get("schema_version"))
-    for metric in (
-        "revenue", "revenue_growth_yoy", "net_margin",
-        "operating_cash_flow", "capex", "free_cash_flow",
-        "cash", "debt", "shares_change_yoy",
-    ):
-        x = verified.get(metric, {})
-        print(
-            metric,
-            "|", x.get("value"),
-            "|", x.get("source"),
-            "|", x.get("status"),
-            "| conf", x.get("confidence"),
-            "|", x.get("period"),
-        )
-    print("fundamental score:", report["score"].overall_score)
-    print("financial health:", report["financial_health"].score)
-PY
+   python /path/to/add_v12_bridge_contract_test.py
 
-EXPECTED CRWD SAFETY BEHAVIOR
------------------------------
-- capex stays unresolved if V3.4.1 reports MATERIAL_DISAGREEMENT.
-- free_cash_flow may remain SEC_XBRL / REVIEW.
-- cash and debt may remain SEC_XBRL / PERIOD_MISMATCH because Yahoo annual
-  balance-sheet data is older.
-- shares_change_yoy remains missing while the SEC share series is quarantined.
-- Nemotron evidence receives these statuses and confidence values.
+   The script:
+   - edits production_candidate_contract_test.py
+   - inserts the bridge test immediately BEFORE the ETF test
+   - creates:
+     production_candidate_contract_test.py.before_bridge_test.bak
 
-GIT — ONLY AFTER REAL TESTS PASS
---------------------------------
-git status
-git add \
-  investor/analyzer.py \
-  investor/primary_data/integration_adapter.py \
-  investor/primary_data/primary_financial_engine.py \
-  investor/committee/evidence_builder.py \
-  investor/integrity/evidence_registry.py \
-  investor_v3_5_integration_test.py
+3. RUN TESTS
 
-git commit -m "feat(investor): integrate verified primary financials into analysis pipeline"
+   python -m py_compile investor/production/platform.py
+   python production_candidate_contract_test.py
 
-git tag -a investor-v3.5 \
-  -m "Baby Investor V3.5 primary financial integration"
+   Expected result includes:
 
-git log --oneline --decorate -8
+   BABY PRODUCTION CANDIDATE: PASS
 
-Do not push until AAPL, SLDE, and CRWD real-analysis output is reviewed.
+4. IF IT PASSES, CREATE THE NEXT GIT CHECKPOINT
+
+   git status
+   git diff
+   git add investor/production/platform.py production_candidate_contract_test.py
+   git commit -m "Add V11 to V12 production decision bridge"
+
+5. PUSH LATER
+
+   A git commit is only a local checkpoint.
+   Do not run git push unless you intentionally want these commits on the remote.
+
+   Recommended: push after the PASS bridge test, BLOCKED bridge test,
+   and production health check all pass.
+
+6. ROLLBACK
+
+   Restore the pre-patch test file:
+   cp production_candidate_contract_test.py.before_bridge_test.bak production_candidate_contract_test.py
+
+IMPORTANT:
+Do not call any Alpaca real-order endpoint while developing this bridge.
+V12 should remain proposal/audit-only with real-money execution DISABLED.

@@ -326,3 +326,32 @@ def v11_run(symbol:str,force:bool=False,record:bool=True):
     research=json.loads((REPORT_DIR/f'{symbol.upper()}.json').read_text())
     v106=flow.get('intelligence_v106') or v106_intelligence.build(symbol.upper(),research)
     return v11_platform.build(symbol.upper(),research,v106,flow,record=record)
+
+# --- Baby Production Candidate ---------------------------------------------------
+from investor.production import ProductionCandidate
+from investor.production.monitoring import MonitoringStore
+production_candidate=ProductionCandidate()
+production_monitor=MonitoringStore()
+
+@app.get('/api/production/health')
+def production_health():
+    return production_candidate.startup()
+
+@app.post('/api/production/portfolio/gate')
+def production_portfolio_gate(payload:dict):
+    return production_candidate.portfolio.evaluate(
+        equity=payload.get('equity'),cash=payload.get('cash'),positions=payload.get('positions') or [],
+        candidate=payload.get('candidate') or {},proposed_notional=payload.get('proposed_notional'),proposed_risk=payload.get('proposed_risk'))
+
+@app.post('/api/production/proposals/{symbol}')
+def production_proposal(symbol:str,payload:dict):
+    # Creates an auditable proposal only. It cannot execute a trade.
+    return production_candidate.ledger.proposal(symbol.upper(),payload.get('proposal') or payload,payload.get('idempotency_key'))
+
+@app.post('/api/production/positions/evaluate')
+def production_position_evaluate(payload:dict):
+    return production_candidate.positions.evaluate(payload.get('position') or {},payload.get('trade_plan') or {},payload.get('current') or {})
+
+@app.post('/api/production/etf/{symbol}/thesis')
+def production_etf_thesis(symbol:str,payload:dict):
+    return production_candidate.etf.evaluate(symbol.upper(),payload.get('intelligence') or payload)

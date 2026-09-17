@@ -1,0 +1,22 @@
+# CHECKPOINT A — do this NOW
+git status
+git add -A
+git commit -m "V12 production guardrails validated"
+
+# Apply patch, then test
+python -m py_compile investor/production/platform.py
+python production_candidate_contract_test.py
+
+# CHECKPOINT B — only after PASS
+git status
+git diff
+git add investor/production/platform.py production_candidate_contract_test.py
+git commit -m "Add V11 to V12 production decision bridge"
+
+# Later, after BLOCKED bridge + API integration pass
+git status
+git add -A
+git commit -m "Validate V12 production decision integration"
+
+# Push only when you choose to publish to the remote:
+# git push
