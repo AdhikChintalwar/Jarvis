@@ -13,6 +13,8 @@ import smtplib
 import sqlite3
 import ssl
 
+from .email_branding import email_shell, verification_html, BABY_EMAIL_LOGO_PATH, BABY_EMAIL_LOGO_CID
+
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def utcnow() -> datetime:
@@ -158,15 +160,49 @@ class SMTPMailer:
     def status(self):
         configured=all([self.enabled,self.host,self.port,self.username,self.password,self.from_email])
         return {'enabled':self.enabled,'configured':bool(configured),'host':self.host or None,'port':self.port,'from_name':self.from_name,'from_email_configured':bool(self.from_email),'credentials_present':bool(self.username and self.password)}
-    def send(self,to_email,subject,body):
-        if not self.enabled: raise RuntimeError('BABY_EMAIL_ENABLED is not ENABLED.')
-        missing=[k for k,v in {'BABY_SMTP_HOST':self.host,'BABY_SMTP_USERNAME':self.username,'BABY_SMTP_PASSWORD':self.password,'BABY_SMTP_FROM_EMAIL':self.from_email}.items() if not v]
-        if missing: raise RuntimeError('Missing email configuration: '+', '.join(missing))
-        msg=EmailMessage(); msg['Subject']=subject; msg['From']=f'{self.from_name} <{self.from_email}>'; msg['To']=to_email; msg.set_content(body)
+    def send(self,to_email,subject,body,html_body=None):
+        if not self.enabled:
+            raise RuntimeError('BABY_EMAIL_ENABLED is not ENABLED.')
+        missing=[k for k,v in {
+            'BABY_SMTP_HOST':self.host,
+            'BABY_SMTP_USERNAME':self.username,
+            'BABY_SMTP_PASSWORD':self.password,
+            'BABY_SMTP_FROM_EMAIL':self.from_email,
+        }.items() if not v]
+        if missing:
+            raise RuntimeError('Missing email configuration: '+', '.join(missing))
+
+        msg=EmailMessage()
+        msg['Subject']=subject
+        msg['From']=f'{self.from_name} <{self.from_email}>'
+        msg['To']=to_email
+        msg.set_content(body)
+
+        if html_body:
+            msg.add_alternative(html_body,subtype='html')
+            logo_path=Path(BABY_EMAIL_LOGO_PATH)
+            if logo_path.exists():
+                html_part=msg.get_payload()[-1]
+                html_part.add_related(
+                    logo_path.read_bytes(),
+                    maintype='image',
+                    subtype='png',
+                    cid=f'<{BABY_EMAIL_LOGO_CID}>',
+                    disposition='inline',
+                    filename='baby-logo.png',
+                )
+
         if self.port==465:
-            with smtplib.SMTP_SSL(self.host,self.port,timeout=20,context=ssl.create_default_context()) as smtp:smtp.login(self.username,self.password);smtp.send_message(msg)
+            with smtplib.SMTP_SSL(self.host,self.port,timeout=20,context=ssl.create_default_context()) as smtp:
+                smtp.login(self.username,self.password)
+                smtp.send_message(msg)
         else:
-            with smtplib.SMTP(self.host,self.port,timeout=20) as smtp:smtp.ehlo();smtp.starttls(context=ssl.create_default_context());smtp.ehlo();smtp.login(self.username,self.password);smtp.send_message(msg)
+            with smtplib.SMTP(self.host,self.port,timeout=20) as smtp:
+                smtp.ehlo()
+                smtp.starttls(context=ssl.create_default_context())
+                smtp.ehlo()
+                smtp.login(self.username,self.password)
+                smtp.send_message(msg)
 
 class SubscriberEmailService:
     def __init__(self,db_path='data/baby_ui.db',report_dir='data/ui_research',scanner_path='data/scans/unusual-volume_latest.json'):
@@ -180,13 +216,28 @@ class SubscriberEmailService:
         code=f'{secrets.randbelow(1_000_000):06d}'; sub=self.store.create_pending(normalized,code,self.verification_minutes); subject='Verify your Baby Investor email alerts'
         body=f'''Baby Investor email verification\n\nYour verification code is: {code}\n\nThis code expires in {self.verification_minutes} minutes.\n\nGive this code to the Baby owner so they can finish verification inside the Baby Alerts page.\n\nVerifying this address only enables research/setup emails. It does not connect a brokerage account and cannot place trades.'''
         key=f"verification:{sub['id']}:{sub['updated_at']}"
-        try:self.mailer.send(normalized,subject,body);self.store.record_delivery(sub['id'],normalized,None,'VERIFICATION',key,'SENT',subject)
+        html_body=verification_html(code,self.verification_minutes)
+        try:self.mailer.send(normalized,subject,body,html_body);self.store.record_delivery(sub['id'],normalized,None,'VERIFICATION',key,'SENT',subject)
         except Exception as exc:self.store.record_delivery(sub['id'],normalized,None,'VERIFICATION',key,'FAILED',subject,str(exc));raise
         return {'status':'PENDING_VERIFICATION','subscriber':sub}
     def resend(self,email): return self.add_subscriber(email)
     def verify(self,email,code):
         sub=self.store.verify(email,code); subject='Baby Investor email alerts verified'; body='Your email address is verified for Baby Investor research/setup alerts.\n\nFuture emails may include why Baby noticed a stock, relevant recent news, the deterministic setup, entry/invalidation/targets, and risks.\n\nResearch alerts only. No trade is placed by email.'; key=f"verified:{sub['id']}:{sub['verified_at']}"
-        try:self.mailer.send(sub['email'],subject,body);self.store.record_delivery(sub['id'],sub['email'],None,'VERIFIED',key,'SENT',subject)
+        html_body=email_shell(
+            'Alerts Verified',
+            'Baby research alerts are enabled.',
+            '<h1 style="font-size:26px;margin:12px 0;color:#eef7ff">Research alerts enabled</h1>'
+            '<p style="color:#8fa5ba;line-height:1.65">Your email is verified for Baby research and setup alerts.</p>'
+            '<div style="margin:20px 0;padding:16px;border:1px solid #24445d;background:#0a1c2a;border-radius:14px">'
+            '<div style="color:#67dff0;font-size:11px;letter-spacing:.12em;font-weight:800">WHAT YOU MAY RECEIVE</div>'
+            '<div style="margin-top:8px;color:#a7bacb;line-height:1.7">Why Baby noticed a stock, what changed, company-specific news, trade-plan levels, risk context, and data freshness.</div>'
+            '</div>'
+            '<div style="margin:20px 0;padding:16px;border:1px solid #293d58;background:#0c1725;border-radius:14px">'
+            '<div style="color:#67dff0;font-size:11px;letter-spacing:.12em;font-weight:800">AUTHORITY</div>'
+            '<div style="margin-top:8px;color:#eef7ff;line-height:1.7">AI execution authority: NONE<br>Real-money execution: DISABLED</div>'
+            '</div>'
+        )
+        try:self.mailer.send(sub['email'],subject,body,html_body);self.store.record_delivery(sub['id'],sub['email'],None,'VERIFIED',key,'SENT',subject)
         except Exception as exc:self.store.record_delivery(sub['id'],sub['email'],None,'VERIFIED',key,'FAILED',subject,str(exc))
         return {'status':'VERIFIED','subscriber':sub}
     def remove(self,sid):
@@ -253,22 +304,119 @@ class SubscriberEmailService:
             h=str(item.get('headline') or '').strip(); src=str(item.get('source') or 'UNKNOWN').strip(); when=str(item.get('created_at') or item.get('published_at') or '').strip(); suffix=' · '.join(x for x in [src,when] if x)
             if h:lines.append(f'- {h}'+(f' ({suffix})' if suffix else ''))
         return lines
+    @staticmethod
+    def _html_escape(v):
+        from html import escape
+        return escape("" if v is None else str(v))
+
+    @classmethod
+    def _setup_html(cls,symbol,company,state,reason,previous_state,why,news,paper,risk):
+        e=cls._html_escape
+        provider=paper.get('quote_provider') or paper.get('provider') or paper.get('execution_quote_provider') or 'UNKNOWN'
+        age=paper.get('quote_age_seconds')
+        if age is None:
+            age=paper.get('age_seconds')
+        quote_asof=paper.get('quote_asof') or paper.get('asof') or paper.get('quote_timestamp')
+        freshness=f"{age:.0f} seconds old" if isinstance(age,(int,float)) else 'UNKNOWN'
+        transition=f"{previous_state or 'FIRST READY OBSERVATION'} -> {state}"
+
+        why_html=''.join(f'<li style="margin:0 0 8px">{e(x)}</li>' for x in why)
+
+        if news:
+            chunks=[]
+            for item in news[:2]:
+                headline=str(item.get('headline') or item.get('title') or '').strip()
+                source=str(item.get('source') or 'UNKNOWN').strip()
+                when=str(item.get('created_at') or item.get('published_at') or 'time unknown').strip()
+                chunks.append(
+                    '<div style="padding:10px 0;border-bottom:1px solid #183349">'
+                    f'<div style="color:#e9f4ff;font-size:13px;line-height:1.55">{e(headline)}</div>'
+                    f'<div style="color:#678096;font-size:11px;margin-top:4px">{e(source)} · {e(when)}</div>'
+                    '</div>'
+                )
+            news_html=''.join(chunks)
+            catalyst_note='Headline timing does not establish price causality. Causality: NOT_ESTABLISHED.'
+        else:
+            news_html="<div style='color:#8fa5ba;font-size:13px;line-height:1.6'>No significant company-specific catalyst was identified in Baby's configured news feed at alert time.</div>"
+            catalyst_note='The setup is based primarily on deterministic market/research evidence. Causality: NOT_ESTABLISHED.'
+
+        rows=[
+            ('Current price',_money(paper.get('quote_price'))),
+            ('Planned entry',_money(paper.get('entry_price'))),
+            ('Invalidation',_money(paper.get('invalidation'))),
+            ('Target 1',_money(paper.get('target_1'))),
+            ('Target 2',_money(paper.get('target_2'))),
+            ('R/R Target 1',_rr(paper.get('rr_target_1'))),
+            ('R/R Target 2',_rr(paper.get('rr_target_2'))),
+        ]
+        table_rows=''
+        for i,(label,value) in enumerate(rows):
+            border='border-bottom:1px solid #183349;' if i < len(rows)-1 else ''
+            table_rows+=(
+                '<tr>'
+                f'<td style="padding:9px 0;{border}color:#7890a6;font-size:13px">{e(label)}</td>'
+                f'<td align="right" style="padding:9px 0;{border}color:#eef7ff;font-size:13px;font-weight:700">{e(value)}</td>'
+                '</tr>'
+            )
+
+        body=(
+            f'<h1 style="font-size:28px;line-height:1.25;margin:14px 0 4px;color:#eef7ff">{e(symbol)} setup ready for review</h1>'
+            f'<div style="color:#7890a6;font-size:13px;margin-bottom:22px">{e(company)}</div>'
+            '<div style="padding:16px;border:1px solid #23506c;background:#0a1c2a;border-radius:14px;margin:18px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em">SETUP STATUS</div>'
+            f'<div style="color:#eef7ff;font-size:21px;font-weight:800;margin-top:7px">{e(state)}</div>'
+            f'<div style="color:#8199ae;font-size:13px;line-height:1.6;margin-top:8px">{e(reason)}</div>'
+            '</div>'
+            '<div style="margin:24px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:10px">WHY BABY NOTICED THIS STOCK</div>'
+            f'<ul style="margin:0;padding-left:20px;color:#a7bacb;font-size:13px;line-height:1.65">{why_html}</ul>'
+            '</div>'
+            '<div style="margin:24px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">WHAT CHANGED / WHY NOW</div>'
+            f'<div style="color:#a7bacb;font-size:13px;line-height:1.65">{e(reason)}</div>'
+            f'<div style="color:#71899e;font-size:12px;margin-top:8px">State change: {e(transition)}</div>'
+            '</div>'
+            '<div style="margin:24px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">TRADE PLAN</div>'
+            f'<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">{table_rows}</table>'
+            '</div>'
+            '<div style="margin:24px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">MAIN RISK</div>'
+            f'<div style="color:#a7bacb;font-size:13px;line-height:1.65">Current Baby risk level: <b style="color:#eef7ff">{e(risk)}</b>. Stored invalidation: <b style="color:#eef7ff">{e(_money(paper.get("invalidation")))}</b>.</div>'
+            '</div>'
+            '<div style="margin:24px 0">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">CATALYSTS & COMPANY NEWS</div>'
+            f'{news_html}'
+            f'<div style="color:#71899e;font-size:11px;line-height:1.55;margin-top:10px">{e(catalyst_note)}</div>'
+            '</div>'
+            '<div style="margin:24px 0;padding:14px;border:1px solid #223b50;background:#091725;border-radius:12px">'
+            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">DATA FRESHNESS</div>'
+            f'<div style="color:#8fa5ba;font-size:12px;line-height:1.65">Quote provider: {e(provider)}<br>Quote age: {e(freshness)}<br>Quote as-of: {e(quote_asof or "UNKNOWN")}</div>'
+            '</div>'
+            '<div style="margin-top:22px;padding:13px;border:1px solid #293d58;background:#0c1725;border-radius:11px;color:#93a9bd;font-size:12px;line-height:1.65">'
+            'Baby determines the trade plan only. Quantity is intentionally omitted; you choose the Alpaca PAPER quantity manually.'
+            '</div>'
+        )
+        return email_shell('Setup Ready',f'{symbol} is ready for review in Baby.',body)
+
     def _build_setup_email(self,symbol,decision,previous_state):
         symbol=symbol.upper(); report=self._load_report(symbol); cand=self._scanner_candidate(symbol); paper=self._proposal(decision); state,_=self._state(decision); company=report.get('company_name') or cand.get('name') or cand.get('company_name') or symbol; why=self._why_noticed(cand,report,decision); news=self._recent_news(symbol,company); reason=paper.get('reason')
         if reason=='All deterministic paper-proposal gates passed.':reason=f'The deterministic setup is active ({state}) and all current proposal gates passed.'
         reason=reason or f"Baby's deterministic setup is currently {state}."; risk=paper.get('risk_level') or report.get('risk') or 'UNKNOWN'; subject=f'Baby — {symbol} setup ready for review'
         parts=['BABY — SETUP READY','',f'{symbol} — {company}',f"Current price: {_money(paper.get('quote_price'))}",'','WHY BABY NOTICED THIS STOCK',*[f'- {x}' for x in why],'','WHY IT MATTERS NOW',reason,f"State change: {previous_state or 'FIRST READY OBSERVATION'} -> {state}",'','RELEVANT NEWS / CATALYST',*self._news_lines(news),'','TRADE PLAN',f'Setup: {state}',f"Planned entry: {_money(paper.get('entry_price'))}",f"Invalidation: {_money(paper.get('invalidation'))}",f"Target 1: {_money(paper.get('target_1'))}",f"Target 2: {_money(paper.get('target_2'))}",f"R/R Target 1: {_rr(paper.get('rr_target_1'))}",f"R/R Target 2: {_rr(paper.get('rr_target_2'))}",'','MAIN RISK',f"Current Baby risk level: {risk}. The stored invalidation level is {_money(paper.get('invalidation'))}.",'','Research/setup alert only. No trade was placed.','Position size is intentionally omitted because each subscriber must make decisions using their own account and risk limits.','AI execution authority: NONE. Real-money execution: DISABLED.']
-        return subject,'\n'.join(parts)
+        text_body='\n'.join(parts)
+        html_body=self._setup_html(symbol,company,state,reason,previous_state,why,news,paper,risk)
+        return subject,text_body,html_body
     def handle_candidate_decision(self,symbol,decision):
         symbol=symbol.upper(); state,ready=self._state(decision); old=self.store.candidate_state(symbol); prev_ready=bool(old and old.get('last_ready')); prev_state=old.get('last_state') if old else None; should=ready and not prev_ready; self.store.set_candidate_state(symbol,state,ready,False)
         if not should:return {'status':'NO_EMAIL','symbol':symbol,'state':state,'ready':ready,'previous_state':prev_state}
         subs=self.store.verified()
         if not subs:return {'status':'NO_VERIFIED_SUBSCRIBERS','symbol':symbol,'state':state,'ready':ready}
-        subject,body=self._build_setup_email(symbol,decision,prev_state); transition=f"{prev_state or 'NONE'}->{state}:{iso()[:16]}"; sent=failed=0
+        subject,body,html_body=self._build_setup_email(symbol,decision,prev_state); transition=f"{prev_state or 'NONE'}->{state}:{iso()[:16]}"; sent=failed=0
         for sub in subs:
             key=f'setup-ready:{symbol}:{transition}'
             if self.store.delivery_exists(sub['id'],key):continue
-            try:self.mailer.send(sub['email'],subject,body);self.store.record_delivery(sub['id'],sub['email'],symbol,'SETUP_READY',key,'SENT',subject);sent+=1
+            try:self.mailer.send(sub['email'],subject,body,html_body);self.store.record_delivery(sub['id'],sub['email'],symbol,'SETUP_READY',key,'SENT',subject);sent+=1
             except Exception as exc:self.store.record_delivery(sub['id'],sub['email'],symbol,'SETUP_READY',key,'FAILED',subject,str(exc));failed+=1
         self.store.set_candidate_state(symbol,state,ready,sent>0)
         return {'status':'EMAILED' if sent else 'DELIVERY_FAILED','symbol':symbol,'state':state,'sent':sent,'failed':failed}

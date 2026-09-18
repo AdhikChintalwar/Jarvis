@@ -14,7 +14,7 @@ def email_shell(title:str,preheader:str,body_html:str)->str:
 <div style="display:none;max-height:0;overflow:hidden">{_e(preheader)}</div>
 <table width="100%" cellspacing="0" cellpadding="0" style="background:#050a11"><tr><td align="center" style="padding:28px 14px">
 <table width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#08131f;border:1px solid #183349;border-radius:18px">
-<tr><td style="padding:20px 24px;border-bottom:1px solid #183349"><img src="cid:baby-logo" alt="BABY" style="display:block;width:260px;max-width:78%;height:auto;border:0"></td></tr>
+<tr><td align="center" style="padding:20px 24px;border-bottom:1px solid #183349"><img src="cid:baby-logo" alt="BABY" style="display:block;width:260px;max-width:78%;height:auto;border:0"></td></tr>
 <tr><td style="padding:24px"><div style="font-size:11px;letter-spacing:.14em;color:#67dff0;font-weight:800">{_e(title.upper())}</div>{body_html}</td></tr>
 <tr><td style="padding:18px 24px;border-top:1px solid #183349;color:#60788f;font-size:11px;line-height:1.6">Research and monitoring only. Email cannot place an order.<br>AI execution authority: NONE · Real-money execution: DISABLED<br>{now}</td></tr>
 </table></td></tr></table></body></html>"""
