@@ -1,0 +1,21 @@
+[Unit]
+Description=Baby Investment Research API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/baby
+EnvironmentFile=/opt/baby/.env
+ExecStart=/opt/baby/.venv/bin/python -m uvicorn baby_ui_backend.app:app --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+# Safer service defaults
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

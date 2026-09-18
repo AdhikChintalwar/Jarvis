@@ -149,14 +149,22 @@ class ProductionDecisionEngine:
 
         # Production sizing must come from deterministic trade-plan evidence.
         proposed_notional = (
-            paper.get('notional')
+            paper.get('proposed_notional')
+            if paper.get('proposed_notional') is not None
+            else paper.get('notional')
             if paper.get('notional') is not None
+            else position.get('position_value')
+            if position.get('position_value') is not None
             else position.get('notional')
         )
 
         proposed_risk = (
-            paper.get('risk_dollars')
+            paper.get('risk_budget_dollars')
+            if paper.get('risk_budget_dollars') is not None
+            else paper.get('risk_dollars')
             if paper.get('risk_dollars') is not None
+            else position.get('maximum_loss')
+            if position.get('maximum_loss') is not None
             else position.get('risk_dollars')
         )
 
@@ -197,13 +205,28 @@ class ProductionDecisionEngine:
             proposed_risk=proposed_risk,
         )
 
-        status = 'ELIGIBLE_PROPOSAL' if gate.get('eligible') else 'BLOCKED'
+        bridge_failures = []
+        if not symbol:
+            bridge_failures.append('MISSING_SYMBOL')
+        if proposed_notional is None or f(proposed_notional) <= 0:
+            bridge_failures.append('MISSING_PROPOSED_NOTIONAL')
+        if proposed_risk is None:
+            bridge_failures.append('MISSING_PROPOSED_RISK')
+        if bool(thesis.get('hard_risk_override')):
+            bridge_failures.append('HARD_RISK_OVERRIDE')
+        if not bool(trade.get('entry_triggered')):
+            bridge_failures.append('ENTRY_NOT_TRIGGERED')
+        if paper and paper.get('eligible') is False:
+            bridge_failures.append('PAPER_PROPOSAL_NOT_ELIGIBLE')
+
+        status = 'ELIGIBLE_PROPOSAL' if gate.get('eligible') and not bridge_failures else 'BLOCKED'
 
         result = {
             'symbol': symbol,
             'status': status,
             'proposal': proposal,
             'portfolio_gate': gate,
+            'bridge_failures': bridge_failures,
             'research_decision': {
                 'state': decision.get('state'),
                 'score': decision.get('score'),
@@ -221,10 +244,65 @@ class ProductionDecisionEngine:
                 'status': status,
                 'gate_failures': gate.get('failures') or [],
                 'gate_warnings': gate.get('warnings') or [],
+                'bridge_failures': bridge_failures,
             },
         )
 
         return result
+
+
+class RealMoneyCanaryGate:
+    """Explicit, capped admission gate for a manually confirmed live-money canary."""
+    def evaluate(self, decision, order, confirmation):
+        mode=os.getenv('BABY_REAL_MONEY_EXECUTION','DISABLED').upper()
+        max_notional=max(0.0,f(os.getenv('BABY_CANARY_MAX_NOTIONAL','5'),5.0))
+        failures=[]
+
+        if mode!='CANARY':
+            failures.append('REAL_MONEY_MODE_NOT_CANARY')
+        if confirmation!='CONFIRM_LIVE_CANARY':
+            failures.append('EXPLICIT_LIVE_CONFIRMATION_REQUIRED')
+        if (decision or {}).get('status')!='ELIGIBLE_PROPOSAL':
+            failures.append('PRODUCTION_DECISION_NOT_ELIGIBLE')
+
+        symbol=str((order or {}).get('symbol') or '').upper()
+        decision_symbol=str((decision or {}).get('symbol') or '').upper()
+        if not symbol or symbol!=decision_symbol:
+            failures.append('ORDER_SYMBOL_MISMATCH')
+
+        side=str((order or {}).get('side') or '').lower()
+        if side!='buy':
+            failures.append('CANARY_BUY_ONLY')
+
+        notional=f((order or {}).get('notional'),0)
+        if notional<=0:
+            failures.append('INVALID_CANARY_NOTIONAL')
+        elif notional>max_notional:
+            failures.append('CANARY_NOTIONAL_LIMIT')
+
+        order_type=str((order or {}).get('type') or 'market').lower()
+        if order_type!='market':
+            failures.append('CANARY_MARKET_ORDER_ONLY')
+
+        tif=str((order or {}).get('time_in_force') or 'day').lower()
+        if tif not in {'day','gtc'}:
+            failures.append('INVALID_TIME_IN_FORCE')
+
+        return {
+            'status':'READY' if not failures else 'BLOCKED',
+            'eligible':not failures,
+            'failures':failures,
+            'mode':mode,
+            'max_notional':max_notional,
+            'execution_requires_explicit_confirmation':True,
+            'order':{
+                'symbol':symbol,
+                'notional':notional,
+                'side':side,
+                'type':order_type,
+                'time_in_force':tif,
+            },
+        }
 
 class ProductionCandidate:
     def __init__(self, db='data/baby_production.db'):
@@ -233,33 +311,34 @@ class ProductionCandidate:
         self.etf = ETFResearchEngine()
         self.positions = PositionManager()
         self.providers = ProviderHealth()
+        self.canary = RealMoneyCanaryGate()
         self.decision = ProductionDecisionEngine(
             self.ledger,
             self.portfolio,
         )
 
     def startup(self):
-        required = {'BABY_REAL_MONEY_EXECUTION': 'DISABLED'}
-        issues = []
-
-        if os.getenv(
-            'BABY_REAL_MONEY_EXECUTION',
-            'DISABLED'
-        ).upper() != 'DISABLED':
-            issues.append('REAL_MONEY_MUST_REMAIN_DISABLED')
-
-        return {
-            'schema_version': SCHEMA_VERSION,
-            'status': 'PASS' if not issues else 'FAIL',
-            'issues': issues,
-            'required': required,
-            'ledger': self.ledger.health(),
-            'ai_authority': {
-                'facts': 'NONE',
-                'score': 0,
-                'price_levels': 0,
-                'risk_override': 0,
-                'execution': 'NONE',
-            },
-            'real_money': REAL_MONEY,
+        mode=os.getenv('BABY_REAL_MONEY_EXECUTION','DISABLED').upper()
+        required={
+            'BABY_REAL_MONEY_EXECUTION':'DISABLED by default; CANARY only for explicit capped execution testing'
         }
+        issues=[]
+        if mode not in {'DISABLED','CANARY'}:
+            issues.append('INVALID_EXECUTION_MODE')
+        return {
+            'schema_version':SCHEMA_VERSION,
+            'status':'PASS' if not issues else 'FAIL',
+            'issues':issues,
+            'required':required,
+            'ledger':self.ledger.health(),
+            'ai_authority':{
+                'facts':'NONE',
+                'score':0,
+                'price_levels':0,
+                'risk_override':0,
+                'execution':'NONE'
+            },
+            'execution_mode':mode,
+            'real_money':'DISABLED' if mode=='DISABLED' else 'CANARY_EXPLICIT_ONLY'
+        }
+

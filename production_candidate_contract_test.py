@@ -151,6 +151,90 @@ with tempfile.TemporaryDirectory() as td:
     ok(blocked_pd['execution']=='NONE','blocked production execution')
     ok(blocked_pd['real_money']=='DISABLED','blocked production real money')
 
+
+    # V12 bridge must fail closed when sizing evidence is missing.
+    missing_size_v11={
+        'symbol':'AAPL',
+        'schema_version':'11.0.1',
+        'decision':{'state':'CANDIDATE','score':68,'confidence':72,'decision_grade_coverage':80,'constraints':[]},
+        'trade_intelligence':{
+            'setup_status':'AT_PULLBACK_ZONE',
+            'entry_triggered':True,
+            'paper_proposal':{},
+            'position':{}
+        },
+        'thesis':{'hard_risk_override':False},
+        'thesis_state':{'state':'STABLE'}
+    }
+    missing_size_pd=p.decision.evaluate(
+        missing_size_v11,
+        {'account':{'equity':100000,'cash':50000},'positions':[]}
+    )
+    ok(missing_size_pd['status']=='BLOCKED','missing sizing blocked')
+    ok('MISSING_PROPOSED_NOTIONAL' in missing_size_pd['bridge_failures'],'missing notional fail closed')
+    ok('MISSING_PROPOSED_RISK' in missing_size_pd['bridge_failures'],'missing risk fail closed')
+
+    # Live canary is blocked by default.
+    old_mode=os.environ.get('BABY_REAL_MONEY_EXECUTION')
+    os.environ['BABY_REAL_MONEY_EXECUTION']='DISABLED'
+    canary=p.canary.evaluate(
+        {'symbol':'AAPL','status':'ELIGIBLE_PROPOSAL'},
+        {'symbol':'AAPL','notional':1,'side':'buy','type':'market','time_in_force':'day'},
+        'CONFIRM_LIVE_CANARY'
+    )
+    ok(not canary['eligible'] and 'REAL_MONEY_MODE_NOT_CANARY' in canary['failures'],'live canary default blocked')
+    if old_mode is None:
+        os.environ.pop('BABY_REAL_MONEY_EXECUTION',None)
+    else:
+        os.environ['BABY_REAL_MONEY_EXECUTION']=old_mode
+
+
+    # Real V11-shaped payload: map real sizing fields but keep inactive setups blocked.
+    v11_waiting={
+        'symbol':'AAPL',
+        'schema_version':'11.0.1',
+        'decision':{'state':'WATCH','score':54.25,'confidence':69.57,'decision_grade_coverage':69.57,'constraints':[]},
+        'trade_intelligence':{
+            'setup_status':'WAIT_FOR_PULLBACK_OR_BREAKOUT',
+            'entry_triggered':False,
+            'paper_proposal':{
+                'eligible':False,
+                'proposed_notional':None,
+                'risk_budget_dollars':400.0,
+                'sector':'UNKNOWN'
+            },
+            'position':{
+                'position_value':7752.6,
+                'maximum_loss':400.0
+            }
+        },
+        'thesis':{'hard_risk_override':False},
+        'thesis_state':{'state':'STABLE'}
+    }
+    waiting_pd=p.decision.evaluate(
+        v11_waiting,
+        {'account':{'equity':100000,'cash':100000},'positions':[]}
+    )
+    ok(waiting_pd['status']=='BLOCKED','inactive setup remains blocked')
+    ok('ENTRY_NOT_TRIGGERED' in waiting_pd['bridge_failures'],'inactive entry blocked')
+    ok('PAPER_PROPOSAL_NOT_ELIGIBLE' in waiting_pd['bridge_failures'],'paper proposal eligibility enforced')
+    ok(waiting_pd['portfolio_gate']['candidate_position_pct']>0,'real v11 sizing mapped')
+
+
+    # Startup health allows only explicit DISABLED or CANARY execution modes.
+    prior_exec_mode=os.environ.get('BABY_REAL_MONEY_EXECUTION')
+    os.environ['BABY_REAL_MONEY_EXECUTION']='CANARY'
+    canary_health=p.startup()
+    ok(canary_health['status']=='PASS','canary execution mode health')
+    ok(canary_health['execution_mode']=='CANARY','canary execution mode reported')
+    os.environ['BABY_REAL_MONEY_EXECUTION']='INVALID'
+    invalid_health=p.startup()
+    ok(invalid_health['status']=='FAIL','invalid execution mode blocked')
+    if prior_exec_mode is None:
+        os.environ.pop('BABY_REAL_MONEY_EXECUTION',None)
+    else:
+        os.environ['BABY_REAL_MONEY_EXECUTION']=prior_exec_mode
+
     etf=p.etf.evaluate('SPY',{'technical':{'metrics':{'price':600,'sma50':580,'sma200':550,'rsi14':60}},'macro_sector':{'regime':'RISK_ON'}});ok(etf['bull_weight']>0 and etf['fundamentals']=='NOT_APPLICABLE','ETF thesis')
     ex=p.positions.evaluate({'qty':10},{'invalidation':90,'target1':110,'target2':120},{'price':89,'hard_risk_override':False,'thesis_state':'STABLE'});ok(ex['action']=='EXIT_PROPOSAL' and ex['execution']=='EXPLICIT_CONFIRMATION_REQUIRED','exit proposal')
     ph=p.providers.assess({'SEC':{'configured':True,'authority':'PRIMARY'},'YAHOO':{'configured':True,'authority':'SECONDARY'}});ok(ph['status']=='PASS','provider health')

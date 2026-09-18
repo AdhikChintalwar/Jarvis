@@ -1,4 +1,8 @@
 from __future__ import annotations
+
+from .history_service import HistoryService
+from .operating_scheduler import BabyOperatingScheduler
+
 import asyncio, json, os
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -344,10 +348,32 @@ def _monitor_decision(symbol: str):
 
 investment_monitor_worker = InvestmentMonitorWorker(
     investment_monitor_store,
-    evaluator=_monitor_decision,
+    deep_evaluator=_monitor_decision,
     quote_getter=lambda symbol: execution_quote_service.get(symbol),
 )
 investment_monitor_worker.start()
+# V13.1 services
+history_service = HistoryService()
+_baby_positions_getter = alpaca_positions
+_baby_account_getter = alpaca_status
+
+try:
+    investment_monitor_worker.stop()
+except Exception:
+    pass
+investment_monitor_worker = InvestmentMonitorWorker(
+    investment_monitor_store,
+    quote_getter=lambda s: execution_quote_service.get(s),
+    deep_evaluator=_monitor_decision,
+    positions_getter=_baby_positions_getter,
+    account_getter=_baby_account_getter,
+    sync_seconds=60,
+    loop_seconds=15,
+)
+investment_monitor_worker.start()
+baby_operating_scheduler = BabyOperatingScheduler(revalidate=_monitor_decision)
+baby_operating_scheduler.start()
+
 
 production_monitor=MonitoringStore()
 
@@ -477,3 +503,21 @@ def monitor_disable(symbol: str):
 @app.post('/api/monitor/jobs/{symbol}/run')
 def monitor_run(symbol: str):
     return investment_monitor_worker.run_one(symbol)
+
+
+@app.get('/api/history/stock/{symbol}')
+def stock_history(symbol: str, range_name: str = '1M'):
+    return history_service.stock(symbol, range_name)
+
+@app.get('/api/history/portfolio')
+def portfolio_history(limit: int = 1000):
+    return {'status':'READY','snapshots':investment_monitor_store.snapshots(limit)}
+
+@app.post('/api/monitor/sync')
+def monitor_sync():
+    return investment_monitor_worker.sync_positions()
+
+@app.get('/api/scheduler/status')
+def scheduler_status():
+    return baby_operating_scheduler.status()
+

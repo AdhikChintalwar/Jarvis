@@ -1,4 +1,9 @@
 export const api={
+ stockHistory:(s,r='1M')=>fetch(`/api/history/stock/${s}?range_name=${r}`).then(x=>x.json()),
+ portfolioHistory:()=>fetch('/api/history/portfolio').then(x=>x.json()),
+ monitorSync:()=>fetch('/api/monitor/sync',{method:'POST'}).then(x=>x.json()),
+ schedulerStatus:()=>fetch('/api/scheduler/status').then(x=>x.json()),
+
  productionHealth:()=>fetch('/api/production/health').then(r=>r.json()),
  productionDecision:(s,p={})=>fetch(`/api/production/decision/${s}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()),
  monitorJobs:()=>fetch('/api/monitor/jobs').then(r=>r.json()),

@@ -59,3 +59,14 @@ data/baby_automations.db
 data/baby_automations.db-shm
 data/baby_automations.db-wal
 .env
+# Local backup files
+*.bak
+
+# Runtime databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary patch helpers
+apply_v*.py
+verify_v*.py

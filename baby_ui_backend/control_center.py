@@ -60,10 +60,19 @@ def automations():
     return payload
 
 def scanner():
-    roots=[Path('data/market_scanner'),Path('data/scanner'),Path('data')]
+    roots=[Path('data/scans'),Path('data/market_scanner'),Path('data/scanner'),Path('data')]
     files=[]
     for root in roots:
-        if root.exists(): files += [p for p in root.glob('*.json') if 'scan' in p.name.lower()]
+        if root.exists():
+            files += [
+                p for p in root.glob('*.json')
+                if (
+                    'scan' in p.name.lower()
+                    or 'momentum' in p.name.lower()
+                    or 'unusual-volume' in p.name.lower()
+                    or 'unusual_volume' in p.name.lower()
+                )
+            ]
     files=sorted(set(files),key=lambda p:p.stat().st_mtime,reverse=True)
     if not files:return {'status':'NOT_AVAILABLE','candidates':[]}
     p=files[0]; d=_read_json(p) or {}

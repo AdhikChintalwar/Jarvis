@@ -1,0 +1,37 @@
+# Baby V14 cloud/backend production dependencies
+# Intentionally excludes local voice/audio/OCR/browser automation packages.
+
+# API / server
+fastapi==0.141.1
+uvicorn==0.48.0
+pydantic==2.13.4
+pydantic-settings==2.14.1
+python-dotenv==1.2.2
+python-multipart==0.0.29
+
+# HTTP / external APIs
+requests==2.34.2
+httpx==0.28.1
+httpx-sse==0.4.3
+
+# Broker / market data
+alpaca-py==0.44.0
+yfinance==1.7.0
+
+# Research / data
+numpy==1.26.4
+pandas==3.0.5
+scikit-learn==1.8.0
+scipy==1.17.1
+beautifulsoup4
+
+# Scheduling / config
+APScheduler==3.11.2
+PyYAML==6.0.3
+
+# LLM / Ask Baby
+openai
+
+# Security / tokens
+PyJWT==2.13.0
+cryptography==48.0.0

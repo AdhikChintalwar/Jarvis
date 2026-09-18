@@ -1,0 +1,7 @@
+[Unit]
+Description=Backup Baby SQLite databases
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/opt/baby/deploy/oracle/backup_sqlite.sh

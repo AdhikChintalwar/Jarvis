@@ -1,57 +1,34 @@
-JARVIS V12 — V11 -> V12 BRIDGE TEST PATCH
-===========================================
+BABY V13 UI + POSITION MONITORING
 
-Run everything from the root of your "Jarvis voice" project while (.venv) is active.
+Apply from Baby project root:
+python ~/Downloads/Baby_V13_UI_Monitoring/apply_v13.py
 
-1. CREATE A GIT CHECKPOINT NOW
+Verify:
+PYTHONPATH=. python ~/Downloads/Baby_V13_UI_Monitoring/verify_v13.py
 
-   git status
-   git add -A
-   git commit -m "V12 production guardrails validated"
+Then restart Baby backend/frontend using your normal commands.
 
-   If Git says there is nothing to commit, that is fine.
+New monitoring endpoints:
+GET    /api/monitor/jobs
+GET    /api/monitor/events
+POST   /api/monitor/jobs/{symbol}
+POST   /api/monitor/jobs/{symbol}/run
+DELETE /api/monitor/jobs/{symbol}
 
-2. APPLY THE PATCH
+Example: register monitoring for a position you actually hold:
+curl -sS -X POST http://localhost:8787/api/monitor/jobs/AAPL   -H "Content-Type: application/json"   -d '{"interval_minutes":5,"thesis_review_minutes":30,"baseline":{"thesis_state":"STABLE","stop":314.89,"target_1":340,"target_2":360}}'   | python -m json.tool
 
-   From the Jarvis project root, run:
+The monitor:
+- keeps one persistent schedule record per symbol
+- checks quote/setup/production state
+- records setup/status changes
+- records invalidation/target events
+- records trade-quality degradation
+- never changes the plan automatically
+- never submits an order automatically
 
-   python /path/to/add_v12_bridge_contract_test.py
-
-   The script:
-   - edits production_candidate_contract_test.py
-   - inserts the bridge test immediately BEFORE the ETF test
-   - creates:
-     production_candidate_contract_test.py.before_bridge_test.bak
-
-3. RUN TESTS
-
-   python -m py_compile investor/production/platform.py
-   python production_candidate_contract_test.py
-
-   Expected result includes:
-
-   BABY PRODUCTION CANDIDATE: PASS
-
-4. IF IT PASSES, CREATE THE NEXT GIT CHECKPOINT
-
-   git status
-   git diff
-   git add investor/production/platform.py production_candidate_contract_test.py
-   git commit -m "Add V11 to V12 production decision bridge"
-
-5. PUSH LATER
-
-   A git commit is only a local checkpoint.
-   Do not run git push unless you intentionally want these commits on the remote.
-
-   Recommended: push after the PASS bridge test, BLOCKED bridge test,
-   and production health check all pass.
-
-6. ROLLBACK
-
-   Restore the pre-patch test file:
-   cp production_candidate_contract_test.py.before_bridge_test.bak production_candidate_contract_test.py
-
-IMPORTANT:
-Do not call any Alpaca real-order endpoint while developing this bridge.
-V12 should remain proposal/audit-only with real-money execution DISABLED.
+Git after verification:
+git status
+git diff
+git add investor/production/investment_monitor.py baby_ui_backend/app.py frontend/src/App.jsx frontend/src/lib/api.js frontend/src/pages/Ideas.jsx frontend/src/pages/Production.jsx frontend/src/components/MiniLineChart.jsx frontend/src/styles/app.css
+git commit -m "Add Baby V13 ideas UI and position monitoring"

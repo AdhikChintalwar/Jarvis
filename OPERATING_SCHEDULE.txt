@@ -1,0 +1,19 @@
+Recommended Baby schedule (ET)
+
+08:45  provider/broker/system health
+09:00  universe/cache refresh
+09:15  pre-market scanner + research shortlist
+09:25  shortlisted setup refresh
+09:35  first post-open production re-evaluation
+09:45  re-rank ideas
+
+During regular session:
+- viewed symbol quote: UI every 5 sec
+- broker account/positions UI: every 10 sec
+- held-position monitor job: every 5 min
+- scanner refresh: every 15 min
+- full thesis review: every 30 min
+- material state change: immediate review event
+
+15:30  afternoon opportunity scan
+16:05  end-of-day snapshot/review
