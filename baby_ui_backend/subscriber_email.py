@@ -202,11 +202,30 @@ class SubscriberEmailService:
             d=json.loads(self.scanner_path.read_text()); rows=d.get('candidates') or d.get('results') or d.get('stocks') or []
             return next((r for r in rows if _upper(r.get('symbol') or r.get('ticker'))==symbol.upper()),{})
         except Exception:return {}
-    def _recent_news(self,symbol):
+    @staticmethod
+    def _company_news_terms(company):
+        common={"inc","incorporated","corp","corporation","company","co","ltd","limited","plc","group","holdings","holding","the"}
+        words=[x.lower() for x in re.findall(r"[A-Za-z0-9]+",str(company or ""))]
+        return [x for x in words if len(x)>=4 and x not in common]
+
+    @classmethod
+    def _is_company_specific_headline(cls,item,symbol,company):
+        headline=str((item or {}).get("headline") or (item or {}).get("title") or "").strip()
+        if not headline:
+            return False
+        if re.search(rf"(?<![A-Za-z0-9]){re.escape(symbol.upper())}(?![A-Za-z0-9])",headline.upper()):
+            return True
+        low=headline.lower()
+        return any(term in low for term in cls._company_news_terms(company))
+
+    def _recent_news(self,symbol,company=None):
         try:
             from .alpaca_market import AlpacaMarketScreener
-            r=AlpacaMarketScreener().news(symbols=[symbol.upper()],limit=5); return [x for x in (r.get('news') or []) if isinstance(x,dict)][:3]
-        except Exception:return []
+            r=AlpacaMarketScreener().news(symbols=[symbol.upper()],limit=10)
+            rows=[x for x in (r.get("news") or []) if isinstance(x,dict)]
+            return [x for x in rows if self._is_company_specific_headline(x,symbol,company)][:3]
+        except Exception:
+            return []
     @staticmethod
     def _proposal(decision):return (((decision or {}).get('proposal') or {}).get('payload') or {}).get('paper_proposal') or {}
     @classmethod
@@ -228,14 +247,14 @@ class SubscriberEmailService:
         return (b or ["Baby's scanner and deterministic research pipeline kept this symbol as an active research candidate."])[:4]
     @staticmethod
     def _news_lines(news):
-        if not news:return ["No current company-specific news item was available from Baby's configured news feed at alert time.","The setup alert is therefore based primarily on deterministic market/research evidence, not an assumed news catalyst."]
+        if not news:return ["No significant company-specific catalyst was identified in Baby's configured news feed at alert time.","The setup alert is therefore based primarily on deterministic market/research evidence; event causality is NOT_ESTABLISHED."]
         lines=['Recent company news that may be relevant (headline timing does not establish price causality):']
         for item in news[:2]:
             h=str(item.get('headline') or '').strip(); src=str(item.get('source') or 'UNKNOWN').strip(); when=str(item.get('created_at') or item.get('published_at') or '').strip(); suffix=' · '.join(x for x in [src,when] if x)
             if h:lines.append(f'- {h}'+(f' ({suffix})' if suffix else ''))
         return lines
     def _build_setup_email(self,symbol,decision,previous_state):
-        symbol=symbol.upper(); report=self._load_report(symbol); cand=self._scanner_candidate(symbol); paper=self._proposal(decision); state,_=self._state(decision); company=report.get('company_name') or cand.get('name') or cand.get('company_name') or symbol; why=self._why_noticed(cand,report,decision); news=self._recent_news(symbol); reason=paper.get('reason')
+        symbol=symbol.upper(); report=self._load_report(symbol); cand=self._scanner_candidate(symbol); paper=self._proposal(decision); state,_=self._state(decision); company=report.get('company_name') or cand.get('name') or cand.get('company_name') or symbol; why=self._why_noticed(cand,report,decision); news=self._recent_news(symbol,company); reason=paper.get('reason')
         if reason=='All deterministic paper-proposal gates passed.':reason=f'The deterministic setup is active ({state}) and all current proposal gates passed.'
         reason=reason or f"Baby's deterministic setup is currently {state}."; risk=paper.get('risk_level') or report.get('risk') or 'UNKNOWN'; subject=f'Baby — {symbol} setup ready for review'
         parts=['BABY — SETUP READY','',f'{symbol} — {company}',f"Current price: {_money(paper.get('quote_price'))}",'','WHY BABY NOTICED THIS STOCK',*[f'- {x}' for x in why],'','WHY IT MATTERS NOW',reason,f"State change: {previous_state or 'FIRST READY OBSERVATION'} -> {state}",'','RELEVANT NEWS / CATALYST',*self._news_lines(news),'','TRADE PLAN',f'Setup: {state}',f"Planned entry: {_money(paper.get('entry_price'))}",f"Invalidation: {_money(paper.get('invalidation'))}",f"Target 1: {_money(paper.get('target_1'))}",f"Target 2: {_money(paper.get('target_2'))}",f"R/R Target 1: {_rr(paper.get('rr_target_1'))}",f"R/R Target 2: {_rr(paper.get('rr_target_2'))}",'','MAIN RISK',f"Current Baby risk level: {risk}. The stored invalidation level is {_money(paper.get('invalidation'))}.",'','Research/setup alert only. No trade was placed.','Position size is intentionally omitted because each subscriber must make decisions using their own account and risk limits.','AI execution authority: NONE. Real-money execution: DISABLED.']
