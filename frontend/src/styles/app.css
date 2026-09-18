@@ -502,3 +502,13 @@ table{width:100%;table-layout:auto}th,td{vertical-align:top}
 .researchStockIdentity h1{margin:0}
 .researchCompanyName{margin-top:4px;font-size:11px;color:#7890aa;max-width:520px}
 @media(max-width:620px){.cleanIdeaCard .stockCompanyName,.stockIdentity .stockCompanyName,.researchCompanyName{max-width:70vw}}
+
+
+/* V15 verified subscriber email alerts */
+.subscriberPanel,.deliveryPanel{margin:0 24px 18px;padding:16px;border:1px solid var(--baby-border);border-radius:14px;background:var(--baby-panel)}
+.subscriberPanel .panelHead p{margin:5px 0 0;color:var(--baby-muted);font-size:11px}.subscriberAdd{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px;margin:14px 0}
+.subscriberAdd input,.verifyControls input{min-width:0;border:1px solid #294559;background:#07131c;color:#dce8f1;border-radius:9px;padding:10px 11px;font:inherit;outline:none}.subscriberAdd input:focus,.verifyControls input:focus{border-color:#4e7997}
+.subscriberList{display:flex;flex-direction:column;border-top:1px solid #142735}.subscriberRow{display:grid;grid-template-columns:minmax(220px,1fr) minmax(280px,auto) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #142735}.subscriberIdentity{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}.subscriberIdentity b{font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.verifyControls{display:flex;align-items:center;justify-content:flex-end;gap:7px}.verifyControls input{width:132px}.verifyControls button,.dangerGhost{border:1px solid #294559;background:#0a1a25;color:#b7c8d5;border-radius:8px;padding:8px 10px;cursor:pointer}.verifyControls button:disabled,.dangerGhost:disabled{opacity:.45;cursor:not-allowed}.dangerGhost{border-color:#58343a;color:#efb3b8;background:#1b0f12}
+.deliveryList{display:flex;flex-direction:column}.deliveryRow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #142735}.deliveryRow>div{display:flex;flex-direction:column;gap:3px;min-width:0}.deliveryRow b{font-size:11px}.deliveryRow span,.deliveryRow small{color:var(--baby-muted);font-size:10px;overflow:hidden;text-overflow:ellipsis}.emptyState{padding:16px 0;color:var(--baby-muted);font-size:11px}
+@media(max-width:760px){.subscriberPanel,.deliveryPanel{margin-left:14px;margin-right:14px}.subscriberAdd{grid-template-columns:1fr}.subscriberRow{grid-template-columns:1fr;align-items:start}.verifyControls{justify-content:flex-start;flex-wrap:wrap}.deliveryRow{grid-template-columns:1fr auto}.deliveryRow>div:nth-child(2){grid-column:1}}

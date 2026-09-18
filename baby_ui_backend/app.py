@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .glossary import GLOSSARY
 from .store import AlertStore
 from .notifications import NotificationEngine
+from .subscriber_email import SubscriberEmailService
 from .quote_service import QuoteService
 from .execution_quote import ExecutionQuoteService
 from .research_service import ResearchService
@@ -29,6 +30,7 @@ proposal_service=PaperProposalService(base_risk_percent=float(os.getenv('BABY_PA
 REPORT_DIR=Path(os.getenv('BABY_RESEARCH_REPORT_DIR','data/ui_research')); REPORT_DIR.mkdir(parents=True,exist_ok=True)
 research_service=ResearchService(report_dir=REPORT_DIR,notifier=notifier,account_size_provider=lambda: paper_service.snapshot({}).get('account',{}).get('equity',paper_service.starting_cash))
 research_orchestrator=ResearchOrchestrator(research_service,REPORT_DIR)
+subscriber_email_service=SubscriberEmailService(db_path=store.path,report_dir=REPORT_DIR)
 
 @app.get('/')
 def root(): return {'service':'BABY UI Gateway','version':'10.6.0','ui':'http://127.0.0.1:5173','docs':'/docs'}
@@ -54,6 +56,33 @@ def quote(symbol:str): return quote_service.get(symbol.upper()).__dict__
 def alerts(limit:int=100): return store.list(min(max(limit,1),500))
 @app.post('/api/alerts/test')
 def test_alert(): return notifier.emit(dedupe_key='v8-test',title='BABY — Notification Test',message='Baby UI notification engine is connected.',severity='NOTICE',force=True)
+
+
+# ---- V15 verified subscriber email alerts ------------------------------------------
+@app.get('/api/email/status')
+def email_status(): return subscriber_email_service.status()
+@app.get('/api/email/subscribers')
+def email_subscribers(): return subscriber_email_service.subscribers()
+@app.post('/api/email/subscribers')
+def email_subscriber_add(payload:dict):
+    try:return subscriber_email_service.add_subscriber(payload.get('email',''))
+    except ValueError as e:raise HTTPException(400,str(e))
+    except Exception as e:raise HTTPException(503,f'Email delivery failed: {e}')
+@app.post('/api/email/subscribers/verify')
+def email_subscriber_verify(payload:dict):
+    try:return subscriber_email_service.verify(payload.get('email',''),payload.get('code',''))
+    except ValueError as e:raise HTTPException(400,str(e))
+@app.post('/api/email/subscribers/resend')
+def email_subscriber_resend(payload:dict):
+    try:return subscriber_email_service.resend(payload.get('email',''))
+    except ValueError as e:raise HTTPException(400,str(e))
+    except Exception as e:raise HTTPException(503,f'Email delivery failed: {e}')
+@app.delete('/api/email/subscribers/{subscriber_id}')
+def email_subscriber_remove(subscriber_id:int):
+    try:return subscriber_email_service.remove(subscriber_id)
+    except ValueError as e:raise HTTPException(404,str(e))
+@app.get('/api/email/deliveries')
+def email_deliveries(limit:int=100): return subscriber_email_service.deliveries(limit)
 
 
 @app.get('/api/control/status')
@@ -371,7 +400,14 @@ investment_monitor_worker = InvestmentMonitorWorker(
     loop_seconds=15,
 )
 investment_monitor_worker.start()
-baby_operating_scheduler = BabyOperatingScheduler(revalidate=_monitor_decision)
+def _candidate_revalidate_with_email(symbol:str):
+    result=_monitor_decision(symbol)
+    try:subscriber_email_service.handle_candidate_decision(symbol,result)
+    except Exception as e:
+        notifier.emit(dedupe_key=f'email-dispatch-error:{symbol}:{str(e)[:80]}',title=f'BABY — {symbol} email dispatch issue',message=str(e),severity='INFO',symbol=symbol)
+    return result
+
+baby_operating_scheduler = BabyOperatingScheduler(revalidate=_candidate_revalidate_with_email)
 baby_operating_scheduler.start()
 
 

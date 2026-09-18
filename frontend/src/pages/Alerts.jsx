@@ -1,15 +1,24 @@
-import React,{useEffect,useState} from 'react';import {api} from '../lib/api';
-export default function Alerts(){const [a,setA]=useState([]);useEffect(()=>{api.alerts().then(setA)},[]);return <main>
-<section className="pageExplain compactExplain">
-  <div>
-    <span className="pageKicker">ALERTS</span>
-    <h1>Important changes Baby wants you to see</h1>
-    <p>This page should answer one question: has anything changed enough that you should review it?</p>
-  </div>
-</section>
-<div className="plainHelpBox">
-  <b>Use this page for</b>
-  <span>Position invalidation, target events, setup changes, research changes, or data problems.</span>
-  <span>You do not need to act on every alert. Open the related stock to understand why it appeared.</span>
-</div>
-<header className="topbar"><div><div className="brand">BABY <span>ALERT CENTER</span></div><p>Deduplicated market, research, SEC, setup and risk events.</p></div></header><div className="alertList">{a.map(x=><div className={`alert severity-${x.severity?.toLowerCase()}`} key={x.id}><small>{x.severity} · {x.symbol||'SYSTEM'} · {new Date(x.created_at).toLocaleString()}</small><h3>{x.title}</h3><p>{x.message}</p></div>)}{!a.length&&<div className="notice">No alerts yet.</div>}</div></main>}
+import React,{useEffect,useState} from 'react';
+import {api} from '../lib/api';
+function cleanErr(e){const s=String(e||'');try{const j=JSON.parse(s.replace(/^Error:\s*/,''));return j.detail||s}catch{return s.replace(/^Error:\s*/,'')}}
+export default function Alerts(){
+ const[a,setA]=useState([]),[subs,setSubs]=useState([]),[delivery,setDelivery]=useState([]),[email,setEmail]=useState(''),[codes,setCodes]=useState({}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
+ const load=async()=>{try{const [alerts,people,deliveries]=await Promise.all([api.alerts(),api.emailSubscribers(),api.emailDeliveries()]);setA(alerts||[]);setSubs(people.subscribers||[]);setDelivery(deliveries.deliveries||[])}catch(e){setMsg(cleanErr(e))}};
+ useEffect(()=>{load()},[]);
+ const add=async()=>{if(!email.trim())return;setBusy(true);setMsg('');try{const r=await api.addEmailSubscriber(email.trim());setMsg(r.status==='ALREADY_VERIFIED'?'That email is already verified.':'Verification code sent. Ask the subscriber for the 6-digit code.');setEmail('');await load()}catch(e){setMsg(cleanErr(e))}finally{setBusy(false)}};
+ const verify=async s=>{setBusy(true);setMsg('');try{await api.verifyEmailSubscriber(s.email,codes[s.id]||'');setMsg(`${s.email} is verified for Baby setup emails.`);setCodes(x=>({...x,[s.id]:''}));await load()}catch(e){setMsg(cleanErr(e))}finally{setBusy(false)}};
+ const resend=async s=>{setBusy(true);setMsg('');try{await api.resendEmailSubscriber(s.email);setMsg(`A new verification code was sent to ${s.email}.`);await load()}catch(e){setMsg(cleanErr(e))}finally{setBusy(false)}};
+ const remove=async s=>{if(!window.confirm(`Remove ${s.email} from Baby email alerts?`))return;setBusy(true);setMsg('');try{await api.removeEmailSubscriber(s.id);setMsg(`${s.email} removed.`);await load()}catch(e){setMsg(cleanErr(e))}finally{setBusy(false)}};
+ return <main className="screenPage alertsPage">
+  <section className="pageExplain compactExplain"><div><span className="pageKicker">ALERTS</span><h1>Important changes Baby wants you to see</h1><p>Baby can also email verified subscribers when a deterministic research candidate first becomes setup-ready.</p></div></section>
+  <div className="plainHelpBox"><b>Subscriber emails are research alerts</b><span>They include why Baby noticed the stock, why the setup matters now, recent company news when available, and the deterministic trade plan.</span><span>They do not include your private account balance or personal position size and they cannot place a trade.</span></div>
+  <section className="subscriberPanel"><div className="panelHead"><div><span className="pageKicker">EMAIL SUBSCRIBERS</span><h3>Verified setup alerts</h3><p>New addresses must confirm a 6-digit code before Baby sends stock alerts.</p></div><span className="statusPill tone-info">{subs.filter(x=>x.status==='VERIFIED').length} verified</span></div>
+   <div className="subscriberAdd"><input type="email" value={email} placeholder="friend@example.com" onChange={e=>setEmail(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')add()}}/><button className="primaryButton" disabled={busy||!email.trim()} onClick={add}>Send verification</button></div>
+   {msg&&<div className="notice">{msg}</div>}
+   <div className="subscriberList">{subs.map(s=><div className="subscriberRow" key={s.id}><div className="subscriberIdentity"><b>{s.email}</b><span className={`simpleStatus ${s.status==='VERIFIED'?'good':'neutral'}`}>{s.status==='VERIFIED'?'Verified':'Pending verification'}</span></div>{s.status==='PENDING'&&<div className="verifyControls"><input value={codes[s.id]||''} maxLength={6} inputMode="numeric" placeholder="6-digit code" onChange={e=>setCodes(x=>({...x,[s.id]:e.target.value.replace(/\D/g,'').slice(0,6)}))}/><button disabled={busy||(codes[s.id]||'').length!==6} onClick={()=>verify(s)}>Verify</button><button disabled={busy} onClick={()=>resend(s)}>Resend</button></div>}<button className="dangerGhost" disabled={busy} onClick={()=>remove(s)}>Remove</button></div>)}{!subs.length&&<div className="emptyState">No email subscribers yet.</div>}</div>
+  </section>
+  <header className="topbar"><div><div className="brand">BABY <span>ALERT CENTER</span></div><p>Deduplicated market, research, SEC, setup and risk events.</p></div></header>
+  <div className="alertList">{a.map(x=><div className={`alert severity-${x.severity?.toLowerCase()}`} key={x.id}><small>{x.severity} · {x.symbol||'SYSTEM'} · {new Date(x.created_at).toLocaleString()}</small><h3>{x.title}</h3><p>{x.message}</p></div>)}{!a.length&&<div className="notice">No alerts yet.</div>}</div>
+  <section className="deliveryPanel"><div className="panelHead"><div><span className="pageKicker">EMAIL HISTORY</span><h3>Recent deliveries</h3></div></div><div className="deliveryList">{delivery.slice(0,15).map(x=><div className="deliveryRow" key={x.id}><div><b>{x.event_type}</b><span>{x.email}</span></div><div><span>{x.symbol||'Verification'}</span><small>{new Date(x.created_at).toLocaleString()}</small></div><span className={`simpleStatus ${x.delivery_status==='SENT'?'good':'bad'}`}>{x.delivery_status}</span></div>)}{!delivery.length&&<div className="emptyState">No subscriber email deliveries yet.</div>}</div></section>
+ </main>
+}

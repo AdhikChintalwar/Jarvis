@@ -47,6 +47,8 @@ class BabyOperatingScheduler:
         cmd=[sys.executable,"market_scan.py","unusual-volume","--top","50","--deep","0"]
         r=subprocess.run(cmd,capture_output=True,text=True,timeout=1200)
         self._log("SCAN",{"returncode":r.returncode,"tail":(r.stdout or r.stderr)[-2000:]})
+        if r.returncode==0 and self.revalidate:
+            self._revalidate()
 
     def _revalidate(self):
         if not self.revalidate:

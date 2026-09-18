@@ -35,6 +35,14 @@ export const api={
  alpacaCancel:id=>fetch(`/api/broker/alpaca/orders/${id}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaResearchProposal:s=>fetch(`/api/research/${s}/alpaca-paper-proposal`).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaResearchOrder:(s,confirmation)=>fetch(`/api/research/${s}/alpaca-paper-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmation})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ emailStatus:()=>fetch('/api/email/status').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ emailSubscribers:()=>fetch('/api/email/subscribers').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ addEmailSubscriber:email=>fetch('/api/email/subscribers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ verifyEmailSubscriber:(email,code)=>fetch('/api/email/subscribers/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ resendEmailSubscriber:email=>fetch('/api/email/subscribers/resend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ removeEmailSubscriber:id=>fetch(`/api/email/subscribers/${id}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ emailDeliveries:()=>fetch('/api/email/deliveries?limit=50').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+
  automations:()=>fetch('/api/automations').then(r=>r.json()),
  scanner:()=>fetch('/api/scanner/latest').then(r=>r.json()),
 };
