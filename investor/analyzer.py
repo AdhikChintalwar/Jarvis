@@ -1,5 +1,4 @@
 from __future__ import annotations
-from investor.position_sizing import PositionSizingEngine
 from datetime import datetime
 from investor.abnormal_volume import AbnormalVolumeEngine
 from investor.sec_filing_analyzer import SECFilingAnalyzer
@@ -99,9 +98,6 @@ class StockAnalyzer:
             TradePlanEngine()
         )
 
-        self.position_sizing_engine = (
-            PositionSizingEngine()
-        )
 
         self.scoring_engine = (
             StockScoringEngine()

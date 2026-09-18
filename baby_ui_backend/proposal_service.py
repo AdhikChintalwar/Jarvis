@@ -93,12 +93,9 @@ class PaperProposalService:
 
         risk_per_share=(entry-stop) if entry is not None and stop is not None and entry>stop else None
         rr1=_rr(entry,stop,t1); rr2=_rr(entry,stop,t2)
+        # V15.4: trade-plan risk structure is evaluated, but Baby does not choose quantity.
         risk_pct=max(.05,self.base_risk_percent*mult); max_pct=max(0.0,self.max_position_percent*mult)
-        risk_dollars=equity*risk_pct/100 if equity is not None else None; max_dollars=equity*max_pct/100 if equity is not None else None
-        sizing_qty=None
-        if all(x is not None and x>0 for x in (entry,risk_per_share,risk_dollars,max_dollars,cash)):
-            sizing_qty=math.floor(min(risk_dollars/risk_per_share,max_dollars/entry,cash/entry))
-            if sizing_qty<=0: sizing_qty=None
+        risk_dollars=None; max_dollars=None; sizing_qty=None
 
         active=setup in {'AT_PULLBACK_ZONE','BREAKOUT_TRIGGERED'}
         if not active: failures.append(f'SETUP_NOT_ACTIVE:{setup}')
@@ -107,9 +104,7 @@ class PaperProposalService:
         if qpx is None: failures.append('QUOTE_UNAVAILABLE')
         if quality in {'UNKNOWN','STALE'}: failures.append(f'QUOTE_QUALITY:{quality}')
         if risk_per_share is None: failures.append('INVALID_RISK_STRUCTURE')
-        if equity is None or cash is None: failures.append('ACCOUNT_STATE_UNAVAILABLE')
         if coverage is not None and coverage < 50: failures.append('EVIDENCE_COVERAGE_BELOW_FLOOR')
-        if active and risk_per_share is not None and equity is not None and cash is not None and sizing_qty is None: failures.append('NO_POSITIVE_POSITION_SIZE')
 
         trade_quality='NOT_EVALUATED'
         if self.enforce_trade_quality and active:
@@ -130,7 +125,7 @@ class PaperProposalService:
 
         failures=list(dict.fromkeys(failures)); eligible=not failures
         if eligible:
-            reason='All deterministic paper-proposal gates passed.'; status='ELIGIBLE'
+            reason='All deterministic setup-readiness gates passed. Quantity is user-selected.'; status='ELIGIBLE'
         elif not active:
             reason=f'Production trade setup is {setup}; entry condition has not triggered.'; status='WAITING'
         elif 'UNIFIED_RISK_BLOCK' in failures:
@@ -147,8 +142,6 @@ class PaperProposalService:
             reason=f'Decision state {decision} does not permit a new-long paper proposal.'; status='BLOCKED'
         elif 'EVIDENCE_COVERAGE_BELOW_FLOOR' in failures:
             reason=f'Evidence coverage {coverage:.1f}% is below the 50% proposal floor.'; status='BLOCKED'
-        elif 'NO_POSITIVE_POSITION_SIZE' in failures:
-            reason='Portfolio/risk constraints do not allow a positive whole-share position size.'; status='BLOCKED'
         else:
             reason='One or more deterministic proposal gates failed.'; status='BLOCKED'
 
@@ -157,7 +150,8 @@ class PaperProposalService:
         if decision=='WATCH': warnings.append('WATCH is permitted only when every setup, trade-quality, execution-data, and risk gate passes.')
         if setup_reason and setup != _upper((trade.get('current_setup') or {}).get('status') or trade.get('status')): warnings.append(setup_reason)
 
-        # A blocked proposal must not expose an actionable proposed quantity/notional.
-        qty=sizing_qty if eligible else None; notional=qty*entry if qty is not None and entry is not None else None
+        # V15.4: Baby never proposes a share count or notional.
+        qty=None; notional=None
+        warnings.append('ORDER_QUANTITY_USER_SELECTED: Baby does not choose the PAPER order quantity.')
         return PaperProposal(symbol,status,eligible,reason,decision,score,confidence,coverage,risk,hard,setup,qpx,quality,provider,asof,entry,stop,t1,t2,risk_per_share,equity,cash,risk_pct,risk_dollars,max_pct,max_dollars,mult,qty,notional,'MARKET',warnings,
                              round(rr1,2) if rr1 is not None else None,round(rr2,2) if rr2 is not None else None,self.min_rr_target_1,self.min_rr_target_2,trade_quality,execution_status,failures,sizing_qty).to_dict()

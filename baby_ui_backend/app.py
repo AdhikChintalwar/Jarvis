@@ -141,18 +141,19 @@ def paper_proposal(symbol:str):
     return proposal_service.build(symbol,research,q,_paper_snapshot_with_quotes())
 
 @app.post('/api/research/{symbol}/paper-proposal/order')
-def paper_proposal_order(symbol:str):
+def paper_proposal_order(symbol:str,payload:dict):
     proposal=paper_proposal(symbol)
     if not proposal.get('eligible'):
         raise HTTPException(409,proposal.get('reason') or 'Paper proposal is not eligible.')
-    qty=proposal.get('proposed_quantity')
-    if not qty: raise HTTPException(409,'No positive paper quantity was produced.')
-    note=(f"BABY V8.5 deterministic proposal | decision={proposal['research_decision']} | "
+    try: qty=float(payload.get('quantity'))
+    except Exception: raise HTTPException(400,'Enter a positive PAPER quantity.')
+    if qty<=0: raise HTTPException(400,'Enter a positive PAPER quantity.')
+    note=(f"USER-SELECTED quantity | BABY deterministic trade plan | decision={proposal['research_decision']} | "
           f"setup={proposal['setup_status']} | risk={proposal['risk_level']} | "
           f"invalidation={proposal['invalidation']} | target1={proposal['target_1']} | "
           f"AI authority=0 | REAL MONEY DISABLED")
     order=paper_service.submit_order(symbol,'BUY',qty,'MARKET',None,note)
-    return {'proposal':proposal,'order':order,'execution':'PENDING_USER_PAPER_EXECUTION'}
+    return {'proposal':proposal,'order':order,'execution':'PENDING_USER_PAPER_EXECUTION','quantity_source':'USER_SELECTED'}
 
 
 
@@ -221,17 +222,69 @@ def alpaca_research_proposal(symbol:str):
 
 @app.post('/api/research/{symbol}/alpaca-paper-order')
 def alpaca_from_research(symbol:str,payload:dict):
-    # Recompute from production research + CURRENT Alpaca PAPER equity/cash at submission time.
-    # Quantity supplied by the browser is deliberately ignored.
+    # Recompute deterministic setup/readiness at submission time.
+    # Quantity is chosen only by the user.
     proposal=_alpaca_research_proposal(symbol)
     if not proposal.get('eligible'):
         raise HTTPException(409,proposal.get('reason') or 'Current production setup is not eligible.')
-    qty=proposal.get('proposed_quantity')
-    if not qty: raise HTTPException(409,'No positive deterministic quantity was produced.')
+    try: qty=float(payload.get('quantity'))
+    except Exception: raise HTTPException(400,'Enter a positive PAPER quantity.')
+    if qty<=0: raise HTTPException(400,'Enter a positive PAPER quantity.')
+
+    # Validate affordability without choosing/recommending a quantity.
+    broker_state=alpaca_broker.status()
+    price=proposal.get('quote_price')
+    user_notional=(qty*float(price)) if price is not None else None
+    available=None
+    for key in ('buying_power','cash'):
+        try:
+            value=broker_state.get(key)
+            if value is not None:
+                available=float(value); break
+        except Exception:
+            pass
+    if user_notional is not None and available is not None and user_notional>available:
+        raise HTTPException(409,'User-selected PAPER quantity exceeds available PAPER buying power/cash.')
+
+    # Validate the user's chosen quantity against deterministic PAPER portfolio
+    # constraints. This validates a user choice; it never recommends a quantity.
     try:
-        order=alpaca_broker.submit_confirmed_order(symbol=symbol.upper(),side='BUY',quantity=qty,order_type='MARKET',confirmation=payload.get('confirmation',''))
-        return {'proposal':proposal,'order':order,'environment':'ALPACA_PAPER','real_money_execution':'DISABLED','quantity_source':'SERVER_DETERMINISTIC_PROPOSAL'}
+        current_positions=alpaca_broker.positions()
+    except Exception:
+        current_positions=[]
+    try:
+        risk_per_share=float(proposal.get('risk_per_share')) if proposal.get('risk_per_share') is not None else None
+    except Exception:
+        risk_per_share=None
+    user_risk=(qty*risk_per_share) if risk_per_share is not None and risk_per_share>0 else 0.0
+    quantity_gate=production_candidate.portfolio.evaluate(
+        equity=broker_state.get('equity'),
+        cash=broker_state.get('cash'),
+        positions=current_positions,
+        candidate={'symbol':symbol.upper(),'sector':'UNKNOWN'},
+        proposed_notional=user_notional or 0.0,
+        proposed_risk=user_risk,
+    )
+    if not quantity_gate.get('eligible'):
+        raise HTTPException(
+            409,
+            'User-selected PAPER quantity violates portfolio constraints: ' +
+            ', '.join(quantity_gate.get('failures') or ['UNKNOWN_PORTFOLIO_CONSTRAINT'])
+        )
+
+    try:
+        order=alpaca_broker.submit_confirmed_order(
+            symbol=symbol.upper(),side='BUY',quantity=qty,order_type='MARKET',
+            confirmation=payload.get('confirmation','')
+        )
+        return {
+            'proposal':proposal,'order':order,'environment':'ALPACA_PAPER',
+            'real_money_execution':'DISABLED','quantity_source':'USER_SELECTED',
+            'user_quantity':qty,'user_notional':user_notional,
+            'user_risk_dollars':user_risk,'quantity_portfolio_gate':quantity_gate
+        }
     except PermissionError as e: raise HTTPException(409,str(e))
+    except ValueError as e: raise HTTPException(400,str(e))
     except Exception as e: raise HTTPException(503,str(e))
 
 @app.get('/api/automations')

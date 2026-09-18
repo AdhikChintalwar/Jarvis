@@ -34,7 +34,7 @@ export const api={
  alpacaOrder:p=>fetch('/api/broker/alpaca/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaCancel:id=>fetch(`/api/broker/alpaca/orders/${id}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaResearchProposal:s=>fetch(`/api/research/${s}/alpaca-paper-proposal`).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
- alpacaResearchOrder:(s,confirmation)=>fetch(`/api/research/${s}/alpaca-paper-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmation})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ alpacaResearchOrder:(s,quantity,confirmation)=>fetch(`/api/research/${s}/alpaca-paper-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quantity:Number(quantity),confirmation})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  monitoredSetups:()=>fetch('/api/portfolio/monitored-setups').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  removeMonitoredSetup:s=>fetch(`/api/portfolio/monitored-setups/${s}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  emailStatus:()=>fetch('/api/email/status').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),

@@ -6,7 +6,6 @@ from typing import Any
 import math
 import pandas as pd
 from investor.trade_plan import TradePlanEngine
-from investor.position_sizing import PositionSizingEngine
 
 @dataclass
 class Scenario:
@@ -53,7 +52,7 @@ TradePlanV46 = TradePlanV47
 class TradePlanAgent:
     """Deterministic research scenarios. It never submits an order."""
     def __init__(self):
-        self.structure=TradePlanEngine(); self.sizer=PositionSizingEngine()
+        self.structure=TradePlanEngine()
 
     @staticmethod
     def _legacy_technical_adapter(technical, history, atr):
@@ -262,11 +261,17 @@ class TradePlanAgent:
         if t1 is not None and t1<=current:notes.append("Pullback target 1 is below current price and is not a current upside target.")
         if t2 is not None and t2<=current:notes.append("Pullback target 2 is below current price and is not a current upside target.")
 
-        pos=None
+        # V15.4.1: Baby does not calculate or recommend share quantity.
+        # Keep only non-sizing metadata for backward-compatible trade-plan shape.
         mult=float(unified.get("position_risk_multiplier") or 1)
-        if account_size and not constrained and planned and stop and planned>stop:
-            x=self.sizer.calculate(account_size,planned,stop,max(.05,base_risk_percent*mult),max_position_percent*mult)
-            pos=asdict(x);pos["unified_risk_multiplier"]=mult
+        pos={
+            "quantity_authority":"USER_SELECTED",
+            "unified_risk_multiplier":mult,
+            "shares":None,
+            "position_value":None,
+            "maximum_loss":None,
+        }
+        notes.append("Order quantity is user-selected; Baby does not calculate a share count.")
 
         return TradePlanV47(current_status,self._r(current),asdict(pull),asdict(breakout),
                             {"status":current_status,"reason":reason},

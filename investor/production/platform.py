@@ -147,26 +147,11 @@ class ProductionDecisionEngine:
         equity = account.get('equity')
         cash = account.get('cash')
 
-        # Production sizing must come from deterministic trade-plan evidence.
-        proposed_notional = (
-            paper.get('proposed_notional')
-            if paper.get('proposed_notional') is not None
-            else paper.get('notional')
-            if paper.get('notional') is not None
-            else position.get('position_value')
-            if position.get('position_value') is not None
-            else position.get('notional')
-        )
-
-        proposed_risk = (
-            paper.get('risk_budget_dollars')
-            if paper.get('risk_budget_dollars') is not None
-            else paper.get('risk_dollars')
-            if paper.get('risk_dollars') is not None
-            else position.get('maximum_loss')
-            if position.get('maximum_loss') is not None
-            else position.get('risk_dollars')
-        )
+        # V15.4.1: setup readiness is intentionally independent of quantity.
+        # Size-dependent portfolio checks are deferred until the USER supplies
+        # a PAPER quantity at explicit submission time.
+        proposed_notional = 0.0
+        proposed_risk = 0.0
 
         sector = (
             paper.get('sector')
@@ -201,17 +186,22 @@ class ProductionDecisionEngine:
                 'symbol': symbol,
                 'sector': sector,
             },
-            proposed_notional=proposed_notional,
-            proposed_risk=proposed_risk,
+            proposed_notional=0.0,
+            proposed_risk=0.0,
         )
+        # The gate above is a quantity-free portfolio preflight. It can still
+        # catch current-state constraints (invalid equity, max positions, etc.),
+        # but candidate sizing is not evaluated until user submission.
+        gate['candidate_position_pct'] = None
+        gate['sizing_state'] = 'DEFERRED_UNTIL_USER_QUANTITY'
+        gate['quantity_authority'] = 'USER_SELECTED'
+        gate['warnings'] = list(gate.get('warnings') or []) + [
+            'Size-dependent portfolio checks are deferred until the user enters a PAPER quantity.'
+        ]
 
         bridge_failures = []
         if not symbol:
             bridge_failures.append('MISSING_SYMBOL')
-        if proposed_notional is None or f(proposed_notional) <= 0:
-            bridge_failures.append('MISSING_PROPOSED_NOTIONAL')
-        if proposed_risk is None:
-            bridge_failures.append('MISSING_PROPOSED_RISK')
         if bool(thesis.get('hard_risk_override')):
             bridge_failures.append('HARD_RISK_OVERRIDE')
         if not bool(trade.get('entry_triggered')):

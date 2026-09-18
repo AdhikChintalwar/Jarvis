@@ -18,8 +18,6 @@ function reasonText(failures=[]){
     PAPER_PROPOSAL_NOT_ELIGIBLE:'Current setup is not ready for a paper proposal.',
     HARD_RISK_OVERRIDE:'Risk rules rejected the setup.',
     EXECUTION_QUOTE_NOT_ELIGIBLE:'Current quote is not fresh enough for execution checks.',
-    MISSING_PROPOSED_RISK:'Risk estimate is missing.',
-    MISSING_PROPOSED_NOTIONAL:'Position size estimate is missing.'
   };
   return map[failures[0]]||String(failures[0]).replaceAll('_',' ').toLowerCase();
 }

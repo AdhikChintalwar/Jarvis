@@ -72,7 +72,7 @@ function TradePlanSheet({symbol,data,onClose}){
  </div>
 }
 
-function TradePlan({data}){if(!data||!Object.keys(data).length)return <div className="notice">Trade plan was not produced.</div>;const p=data.pullback||{},b=data.breakout||{},c=data.current_setup||{},pos=data.position||{};return <section className="tradeVisual"><div className="tradeBanner"><div><small>CURRENT SETUP</small><strong>{c.status||data.status}</strong><p>{c.reason}</p></div><div><small>CURRENT PRICE</small><strong>${fmt(data.current_price)}</strong></div></div><div className="tradeColumns"><Scenario title="PULLBACK" status={p.status} rows={[['Entry zone',`${money(p.entry_low)} – ${money(p.entry_high)}`],['Planned entry',money(p.planned_entry)],['Invalidation',money(p.invalidation)],['Target 1',money(p.target_1)],['Target 2',money(p.target_2)],['R/R T1',ratio(p.risk_reward_1)],['R/R T2',ratio(p.risk_reward_2)]]}/><Scenario title="BREAKOUT" status={b.status} rows={[['Trigger',money(b.trigger)],['Invalidation',money(b.invalidation)],['Target 1',money(b.target_1)],['Target 2',money(b.target_2)],['R/R T1',ratio(b.risk_reward_1)],['R/R T2',ratio(b.risk_reward_2)]]}/></div><div className="positionStrip"><PP n="Paper account" v={money(pos.account_size)}/><PP n="Adjusted risk" v={pos.risk_percent==null?'UNKNOWN':`${pos.risk_percent}%`}/><PP n="Maximum loss" v={money(pos.maximum_loss)}/><PP n="Shares" v={pos.shares??'UNKNOWN'}/><PP n="Position value" v={money(pos.position_value)}/><PP n="Portfolio exposure" v={pos.portfolio_percentage==null?'UNKNOWN':`${pos.portfolio_percentage}%`}/><PP n="Risk multiplier" v={pos.unified_risk_multiplier==null?'UNKNOWN':`${pos.unified_risk_multiplier}×`}/></div>{data.notes?.map((n,i)=><div className="notice" key={i}>{n}</div>)}</section>}
+function TradePlan({data}){if(!data||!Object.keys(data).length)return <div className="notice">Trade plan was not produced.</div>;const p=data.pullback||{},b=data.breakout||{},c=data.current_setup||{};return <section className="tradeVisual"><div className="tradeBanner"><div><small>CURRENT SETUP</small><strong>{c.status||data.status}</strong><p>{c.reason}</p></div><div><small>CURRENT PRICE</small><strong>${fmt(data.current_price)}</strong></div></div><div className="tradeColumns"><Scenario title="PULLBACK" status={p.status} rows={[['Entry zone',`${money(p.entry_low)} – ${money(p.entry_high)}`],['Planned entry',money(p.planned_entry)],['Invalidation',money(p.invalidation)],['Target 1',money(p.target_1)],['Target 2',money(p.target_2)],['R/R T1',ratio(p.risk_reward_1)],['R/R T2',ratio(p.risk_reward_2)]]}/><Scenario title="BREAKOUT" status={b.status} rows={[['Trigger',money(b.trigger)],['Invalidation',money(b.invalidation)],['Target 1',money(b.target_1)],['Target 2',money(b.target_2)],['R/R T1',ratio(b.risk_reward_1)],['R/R T2',ratio(b.risk_reward_2)]]}/></div><div className="notice">Baby determines the trade plan only. You choose the Alpaca PAPER quantity when you explicitly submit an order.</div>{data.notes?.map((n,i)=><div className="notice" key={i}>{n}</div>)}</section>}
 function Scenario({title,status,rows}){return <div className="scenario"><div><small>{title} SETUP</small><b>{status||'UNKNOWN'}</b></div>{rows.map(([k,v])=><p key={k}><span>{k}</span><strong>{v}</strong></p>)}</div>}
 const fmt=x=>x==null?'UNKNOWN':Number(x).toFixed(2);const money=x=>x==null?'UNKNOWN':`$${fmt(x)}`;const ratio=x=>x==null?'UNKNOWN':`${Number(x).toFixed(2)}×`;
 function Job({job}){if(!job)return null;const running=['QUEUED','RUNNING'].includes(job.status);return <div className={`jobState ${job.status?.toLowerCase()}`}>{running?<RefreshCw size={16} className="spin"/>:<CheckCircle2 size={16}/>}<span>{job.status}{job.stage?` · ${job.stage}`:''}</span></div>}
@@ -80,15 +80,15 @@ function K({label,v,danger}){return <div className={`kpi ${danger?'danger':''}`}
 function Reasoning({stage}){const groups=[['Positive evidence',stage?.positives,'good'],['Negative evidence',stage?.negatives,'bad'],['Unknown evidence',stage?.unknowns,'unknown'],['Conflicting evidence',stage?.conflicts,'conflict']];return <div className="reason"><h3>AUDITABLE REASONING OUTPUT</h3><p className="muted">Inspectable evidence, formulas and rule outputs — not hidden LLM chain-of-thought.</p>{groups.map(([n,a,c])=>(a?.length?<div key={n}><b>{n}</b>{a.map((x,i)=><p className={c} key={i}>• {x}</p>)}</div>:null))}{!groups.some(x=>x[1]?.length)&&<p className="muted">No structured reasons exported for this stage. Missing evidence remains UNKNOWN.</p>}</div>}
 function JsonPanel({title,data}){return <div className="jsonPanel"><h3>{title}</h3><pre>{JSON.stringify(data||{},null,2)}</pre></div>}
 function PaperProposalPanel({symbol}){
- const[confirm,setConfirm]=useState(''),[brokerMsg,setBrokerMsg]=useState(''),[alpacaProposal,setAlpacaProposal]=useState(null),[checking,setChecking]=useState(false);
+ const[confirm,setConfirm]=useState(''),[quantity,setQuantity]=useState('1'),[brokerMsg,setBrokerMsg]=useState(''),[alpacaProposal,setAlpacaProposal]=useState(null),[checking,setChecking]=useState(false);
  const checkAlpaca=async()=>{setBrokerMsg('');setChecking(true);try{const p=await api.alpacaResearchProposal(symbol);setAlpacaProposal(p);setBrokerMsg(p.eligible?`Baby is monitoring ${symbol}. SETUP READY for review; no order was placed.`:`Baby is now monitoring ${symbol}. Current state: ${p.setup_status||p.status}. ${p.reason||''}`)}catch(e){setBrokerMsg(String(e))}finally{setChecking(false)}};
- const sendAlpaca=async()=>{setBrokerMsg('');try{const r=await api.alpacaResearchOrder(symbol,confirm);setBrokerMsg(`Submitted ${r.proposal.proposed_quantity} shares to Alpaca PAPER: ${r.order.id}`);setAlpacaProposal(r.proposal);setConfirm('')}catch(e){setBrokerMsg(String(e))}};
+ const sendAlpaca=async()=>{setBrokerMsg('');const q=Number(quantity);if(!Number.isFinite(q)||q<=0){setBrokerMsg('Enter a positive PAPER quantity.');return}try{const r=await api.alpacaResearchOrder(symbol,q,confirm);setBrokerMsg(`Submitted ${q} user-selected shares to Alpaca PAPER: ${r.order.id}`);setAlpacaProposal(r.proposal);setConfirm('')}catch(e){setBrokerMsg(String(e))}};
  return <div className="proposalPanel">
    <div className="stageHead">
      <div>
        <span className="eyebrow">ALPACA PAPER · EXECUTION BRIDGE</span>
-       <h2>Server-verified paper proposal</h2>
-       <p>Baby recomputes Decision + TradePlan + UnifiedRisk + account constraints server-side. The browser cannot choose the research-driven quantity.</p>
+       <h2>Server-verified trade plan</h2>
+       <p>Baby decides the setup, entry, invalidation, targets and readiness. You decide the PAPER order quantity.</p>
      </div>
      {alpacaProposal&&<div className={`badge ${alpacaProposal.eligible?'status-pass':'status-review'}`}>{alpacaProposal.status}</div>}
    </div>
@@ -99,20 +99,23 @@ function PaperProposalPanel({symbol}){
      <div className="panelGrid">
        <PP n="Status" v={alpacaProposal.status}/>
        <PP n="Setup" v={alpacaProposal.setup_status}/>
-       <PP n="Paper equity" v={money(alpacaProposal.account_equity)}/>
-       <PP n="Paper cash" v={money(alpacaProposal.cash_available)}/>
-       <PP n="Server-sized shares" v={alpacaProposal.proposed_quantity??'NONE'}/>
-       <PP n="Notional" v={money(alpacaProposal.proposed_notional)}/>
+       <PP n="Quote" v={money(alpacaProposal.quote_price)}/>
+       <PP n="Risk" v={alpacaProposal.risk_level}/>
+       <PP n="Entry" v={money(alpacaProposal.entry_price)}/>
+       <PP n="Invalidation" v={money(alpacaProposal.invalidation)}/>
+       <PP n="Target 1" v={money(alpacaProposal.target_1)}/>
+       <PP n="Target 2" v={money(alpacaProposal.target_2)}/>
      </div>
      <div className={`proposalReason ${alpacaProposal.eligible?'good':'unknown'}`}>
-       <b>{alpacaProposal.eligible?'ELIGIBLE FOR ALPACA PAPER CONFIRMATION':'ALPACA PAPER WAITING / BLOCKED'}</b>
+       <b>{alpacaProposal.eligible?'SETUP READY FOR YOUR REVIEW':'ALPACA PAPER WAITING / BLOCKED'}</b>
        <span>{alpacaProposal.reason}</span>
      </div>
      {alpacaProposal.eligible&&<>
-       <p>Type the exact confirmation phrase. The server recomputes the proposal again at submission time.</p>
-       <div className="paperForm">
+       <p>Enter the simulated PAPER quantity you want. Baby does not choose this number. The server revalidates the setup again before submission.</p>
+       <div className="paperForm userQuantityForm">
+         <input type="number" min="0.000001" step="any" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Quantity"/>
          <input value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="EXECUTE ALPACA PAPER"/>
-         <button disabled={confirm!=='EXECUTE ALPACA PAPER'} onClick={sendAlpaca}>SUBMIT TO ALPACA PAPER</button>
+         <button disabled={confirm!=='EXECUTE ALPACA PAPER'||!(Number(quantity)>0)} onClick={sendAlpaca}>SUBMIT USER QUANTITY TO ALPACA PAPER</button>
        </div>
      </>}
    </div>}
