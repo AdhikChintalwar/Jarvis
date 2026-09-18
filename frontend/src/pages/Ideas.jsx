@@ -82,7 +82,7 @@ export default function Ideas({openResearch}){
         const status=friendlyStatus(x.production||x.v11);
         return <article className="cleanIdeaCard" key={x.symbol||i}>
           <div className="cleanIdeaTop">
-            <div><b className="stockTicker">{x.symbol}</b><span className={`simpleStatus ${status.tone}`}>{status.label}</span></div>
+            <div className="stockNameBlock"><div className="tickerStatusLine"><b className="stockTicker">{x.symbol}</b><span className={`simpleStatus ${status.tone}`}>{status.label}</span></div><small className="stockCompanyName">{x.name||x.company_name||"Company name unavailable"}</small></div>
             <button className="viewResearchButton" onClick={()=>openResearch?.(x.symbol)}>View research →</button>
           </div>
 

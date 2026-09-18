@@ -87,7 +87,7 @@ export default function Dashboard({openResearch,go}){
         </div>
         <div className="homeIdeaRows">
           {candidates.map((x,i)=><button className="homeIdeaRow" key={x.symbol||i} onClick={()=>openResearch?.(x.symbol)}>
-            <div className="stockIdentity"><b>{x.symbol}</b><span>{x.flow_type||x.setup||'Research candidate'}</span></div>
+            <div className="stockIdentity"><b>{x.symbol}</b><small className="stockCompanyName">{x.name||x.company_name||"Company name unavailable"}</small><span>{x.flow_type||x.setup||'Research candidate'}</span></div>
             <div className="stockScore"><small>Scanner score</small><b>{x.opportunity_score??x.score??'--'}</b></div>
             <span className="openButton">View research</span>
           </button>)}

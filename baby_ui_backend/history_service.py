@@ -11,6 +11,7 @@ class HistoryService:
       "3M":("3mo","1d"),
       "6M":("6mo","1d"),
       "1Y":("1y","1d"),
+      "MAX":("max","1d"),
     }
 
     def stock(self,symbol:str,range_name:str="1M")->dict[str,Any]:

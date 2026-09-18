@@ -9,6 +9,7 @@ const views=[
  {label:'3M',range:'3M',note:'daily candles'},
  {label:'6M',range:'6M',note:'daily candles'},
  {label:'1Y',range:'1Y',note:'daily candles'},
+ {label:'MAX',range:'MAX',note:'full available history'},
 ];
 
 const money=v=>Number.isFinite(Number(v))?`$${Number(v).toFixed(2)}`:'--';

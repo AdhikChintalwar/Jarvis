@@ -28,7 +28,9 @@ const advancedNav=[
 
 export default function App(){
   const[page,setPage]=useState('home');
-  const[symbol,setSymbol]=useState('AAPL');
+  const[symbol,setSymbol]=useState(()=>{
+    try{return localStorage.getItem('baby:lastResearchSymbol')||'AAPL'}catch{return 'AAPL'}
+  });
   const[advancedOpen,setAdvancedOpen]=useState(false);
   const[mobileOpen,setMobileOpen]=useState(false);
   const [askBabyOpen,setAskBabyOpen]=useState(false);
@@ -38,8 +40,15 @@ export default function App(){
     setMobileOpen(false);
   };
 
+  const rememberResearchSymbol=s=>{
+    const next=String(s||'').trim().toUpperCase();
+    if(!next)return;
+    setSymbol(next);
+    try{localStorage.setItem('baby:lastResearchSymbol',next)}catch{}
+  };
+
   const openResearch=s=>{
-    if(s)setSymbol(String(s).toUpperCase());
+    if(s)rememberResearchSymbol(s);
     setPage('research');
     setMobileOpen(false);
   };
@@ -50,7 +59,7 @@ export default function App(){
       case 'ideas':return <Ideas openResearch={openResearch}/>;
       case 'portfolio':return <Portfolio openResearch={openResearch}/>;
       case 'alerts':return <Alerts/>;
-      case 'research':return <Research symbol={symbol}/>;
+      case 'research':return <Research initialSymbol={symbol} onContext={ctx=>ctx?.symbol&&rememberResearchSymbol(ctx.symbol)}/>;
       case 'production':return <Production/>;
       case 'markets':return <Markets openResearch={openResearch}/>;
       case 'backtests':return <Backtests/>;
