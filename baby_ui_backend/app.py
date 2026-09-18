@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .history_service import HistoryService
 from .operating_scheduler import BabyOperatingScheduler
+from .monitored_setups import MonitoredSetupStore
 
 import asyncio, json, os
 from pathlib import Path
@@ -22,7 +23,7 @@ from .alpaca_broker import AlpacaPaperBroker, CONFIRMATION_PHRASE
 
 app=FastAPI(title='Baby UI Gateway',version='10.6.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_credentials=True,allow_methods=['*'],allow_headers=['*'])
-store=AlertStore(); notifier=NotificationEngine(store=store); quote_service=QuoteService()
+store=AlertStore(); notifier=NotificationEngine(store=store); quote_service=QuoteService(); monitored_setup_store=MonitoredSetupStore()
 execution_quote_service=ExecutionQuoteService(fallback=quote_service)
 paper_service=PaperTradingService()
 alpaca_broker=AlpacaPaperBroker()
@@ -158,6 +159,19 @@ def paper_proposal_order(symbol:str):
 # ---- Alpaca PAPER execution bridge -------------------------------------------------
 # Live trading is deliberately not exposed by V8.6. The broker adapter hard-codes
 # paper=True and every submit call requires the exact explicit confirmation phrase.
+@app.get('/api/portfolio/monitored-setups')
+def monitored_setups():
+    return {
+        'status':'READY',
+        'setups':monitored_setup_store.list(),
+        'execution_authority':'NONE',
+        'real_money_execution':'DISABLED',
+    }
+
+@app.delete('/api/portfolio/monitored-setups/{symbol}')
+def monitored_setup_remove(symbol:str):
+    return monitored_setup_store.remove(symbol)
+
 @app.get('/api/broker/alpaca/status')
 def alpaca_status():
     return alpaca_broker.status()
@@ -201,7 +215,9 @@ def _alpaca_research_proposal(symbol:str):
 
 @app.get('/api/research/{symbol}/alpaca-paper-proposal')
 def alpaca_research_proposal(symbol:str):
-    return _alpaca_research_proposal(symbol)
+    proposal=_alpaca_research_proposal(symbol)
+    monitored_setup_store.monitor_proposal(symbol,proposal,source='ALPACA_PAPER_CHECK')
+    return proposal
 
 @app.post('/api/research/{symbol}/alpaca-paper-order')
 def alpaca_from_research(symbol:str,payload:dict):

@@ -81,7 +81,7 @@ function Reasoning({stage}){const groups=[['Positive evidence',stage?.positives,
 function JsonPanel({title,data}){return <div className="jsonPanel"><h3>{title}</h3><pre>{JSON.stringify(data||{},null,2)}</pre></div>}
 function PaperProposalPanel({symbol}){
  const[confirm,setConfirm]=useState(''),[brokerMsg,setBrokerMsg]=useState(''),[alpacaProposal,setAlpacaProposal]=useState(null),[checking,setChecking]=useState(false);
- const checkAlpaca=async()=>{setBrokerMsg('');setChecking(true);try{const p=await api.alpacaResearchProposal(symbol);setAlpacaProposal(p);if(!p.eligible)setBrokerMsg(`ALPACA PAPER BLOCKED: ${p.reason}`)}catch(e){setBrokerMsg(String(e))}finally{setChecking(false)}};
+ const checkAlpaca=async()=>{setBrokerMsg('');setChecking(true);try{const p=await api.alpacaResearchProposal(symbol);setAlpacaProposal(p);setBrokerMsg(p.eligible?`Baby is monitoring ${symbol}. SETUP READY for review; no order was placed.`:`Baby is now monitoring ${symbol}. Current state: ${p.setup_status||p.status}. ${p.reason||''}`)}catch(e){setBrokerMsg(String(e))}finally{setChecking(false)}};
  const sendAlpaca=async()=>{setBrokerMsg('');try{const r=await api.alpacaResearchOrder(symbol,confirm);setBrokerMsg(`Submitted ${r.proposal.proposed_quantity} shares to Alpaca PAPER: ${r.order.id}`);setAlpacaProposal(r.proposal);setConfirm('')}catch(e){setBrokerMsg(String(e))}};
  return <div className="proposalPanel">
    <div className="stageHead">

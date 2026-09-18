@@ -35,6 +35,8 @@ export const api={
  alpacaCancel:id=>fetch(`/api/broker/alpaca/orders/${id}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaResearchProposal:s=>fetch(`/api/research/${s}/alpaca-paper-proposal`).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  alpacaResearchOrder:(s,confirmation)=>fetch(`/api/research/${s}/alpaca-paper-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmation})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ monitoredSetups:()=>fetch('/api/portfolio/monitored-setups').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
+ removeMonitoredSetup:s=>fetch(`/api/portfolio/monitored-setups/${s}`,{method:'DELETE'}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  emailStatus:()=>fetch('/api/email/status').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  emailSubscribers:()=>fetch('/api/email/subscribers').then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),
  addEmailSubscriber:email=>fetch('/api/email/subscribers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}).then(async r=>{if(!r.ok)throw new Error(await r.text());return r.json()}),

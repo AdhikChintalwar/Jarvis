@@ -8,6 +8,9 @@ import subprocess
 import sys
 import threading
 
+from .monitored_setups import MonitoredSetupStore
+from .notifications import NotificationEngine
+
 ET=ZoneInfo("America/New_York")
 
 class BabyOperatingScheduler:
@@ -32,6 +35,8 @@ class BabyOperatingScheduler:
         self.last_scan_returncode=None
         self.log_path=Path("data/baby_scheduler_events.jsonl")
         self.log_path.parent.mkdir(parents=True,exist_ok=True)
+        self.monitored_store=MonitoredSetupStore()
+        self.monitor_notifier=NotificationEngine(native=False)
 
     def start(self):
         if not self.enabled or (self._thread and self._thread.is_alive()):
@@ -55,6 +60,7 @@ class BabyOperatingScheduler:
             "revalidation_running":self.revalidation_running,
             "current_symbol":self.current_symbol,
             "revalidate_top":self.revalidate_limit,
+            "monitored_setup_count":len(self.monitored_store.symbols()),
             "last_scan_started":self.last_scan_started,
             "last_scan_finished":self.last_scan_finished,
             "last_revalidation_started":self.last_revalidation_started,
@@ -80,37 +86,23 @@ class BabyOperatingScheduler:
             self.scan_running=True
             self.last_scan_started=datetime.now(ET).isoformat()
             self._log("SCAN_STARTED",{"command":"market_scan.py unusual-volume --top 50 --deep 0"})
-
             try:
-                r=subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=self.scan_timeout_seconds,
-                )
+                r=subprocess.run(cmd,capture_output=True,text=True,timeout=self.scan_timeout_seconds)
             except subprocess.TimeoutExpired as exc:
                 self.last_scan_returncode=None
                 self.last_scan_finished=datetime.now(ET).isoformat()
                 tail=((exc.stdout or "") if isinstance(exc.stdout,str) else "")[-1000:]
-                self._log("SCAN_ERROR",{
-                    "kind":"TIMEOUT",
-                    "timeout_seconds":self.scan_timeout_seconds,
-                    "tail":tail,
-                })
+                self._log("SCAN_ERROR",{"kind":"TIMEOUT","timeout_seconds":self.scan_timeout_seconds,"tail":tail})
                 return {"status":"ERROR","reason":"TIMEOUT"}
 
             self.last_scan_returncode=r.returncode
             self.last_scan_finished=datetime.now(ET).isoformat()
             output=(r.stdout or "") + ("\n"+r.stderr if r.stderr else "")
-            self._log("SCAN",{
-                "returncode":r.returncode,
-                "tail":output[-2000:],
-            })
+            self._log("SCAN",{"returncode":r.returncode,"tail":output[-2000:]})
 
             if r.returncode==0 and self.revalidate:
                 return {"status":"READY","returncode":0,"revalidation":self._revalidate()}
             return {"status":"ERROR" if r.returncode else "READY","returncode":r.returncode}
-
         except Exception as exc:
             self.last_scan_finished=datetime.now(ET).isoformat()
             self._log("SCAN_ERROR",{"kind":type(exc).__name__,"error":str(exc)})
@@ -118,6 +110,23 @@ class BabyOperatingScheduler:
         finally:
             self.scan_running=False
             self._work_lock.release()
+
+    def _candidate_symbols(self):
+        p=Path("data/scans/unusual-volume_latest.json")
+        d=json.loads(p.read_text()) if p.exists() else {}
+        rows=d.get("candidates") or d.get("results") or d.get("stocks") or []
+        scanner=[]
+        for x in rows[:self.revalidate_limit]:
+            s=x.get("symbol") or x.get("ticker")
+            if s:
+                scanner.append(str(s).upper())
+
+        monitored=[str(s).upper() for s in self.monitored_store.symbols()]
+        combined=[]
+        for s in monitored+scanner:
+            if s and s not in combined:
+                combined.append(s)
+        return combined,scanner,monitored
 
     def _revalidate(self):
         if not self.revalidate:
@@ -130,26 +139,25 @@ class BabyOperatingScheduler:
 
         self.revalidation_running=True
         self.last_revalidation_started=datetime.now(ET).isoformat()
-        self._log("REVALIDATE_STARTED",{"limit":self.revalidate_limit})
         results=[]
 
         try:
-            p=Path("data/scans/unusual-volume_latest.json")
-            d=json.loads(p.read_text()) if p.exists() else {}
-            rows=d.get("candidates") or d.get("results") or d.get("stocks") or []
-            selected=rows[:self.revalidate_limit]
+            selected,scanner,monitored=self._candidate_symbols()
+            self._log("REVALIDATE_STARTED",{
+                "scanner_limit":self.revalidate_limit,
+                "scanner_symbols":scanner,
+                "monitored_symbols":monitored,
+                "total_symbols":len(selected),
+            })
 
-            for index,x in enumerate(selected,1):
-                s=x.get("symbol") or x.get("ticker")
-                if not s:
-                    continue
-                s=str(s).upper()
+            for index,s in enumerate(selected,1):
                 self.current_symbol=s
                 started=datetime.now(ET)
                 self._log("REVALIDATE_CANDIDATE_STARTED",{
                     "symbol":s,
                     "index":index,
                     "total":len(selected),
+                    "monitored":s in monitored,
                 })
                 try:
                     r=self.revalidate(s)
@@ -157,17 +165,38 @@ class BabyOperatingScheduler:
                         "symbol":s,
                         "status":r.get("status"),
                         "bridge_failures":r.get("bridge_failures") or [],
+                        "monitored":s in monitored,
                     }
+
+                    transition=self.monitored_store.update_from_decision(s,r)
+                    if transition.get("transition_to_ready"):
+                        self.monitor_notifier.emit(
+                            dedupe_key=f"monitored-setup-ready:{s}:{transition.get('updated_at')}",
+                            title=f"BABY — {s} Setup Ready for Review",
+                            message="A monitored deterministic setup became eligible for review. No order was placed.",
+                            severity="IMPORTANT",
+                            symbol=s,
+                            payload={
+                                "event_type":"SETUP_READY",
+                                "execution_authority":"NONE",
+                                "real_money_execution":"DISABLED",
+                            },
+                            force=True,
+                        )
+                        item["monitor_transition"]="SETUP_READY"
+
                 except Exception as exc:
-                    item={"symbol":s,"status":"ERROR","error":str(exc)}
+                    item={"symbol":s,"status":"ERROR","error":str(exc),"monitored":s in monitored}
+
                 item["elapsed_seconds"]=round((datetime.now(ET)-started).total_seconds(),3)
                 results.append(item)
                 self._log("REVALIDATE_CANDIDATE",item)
 
             self.last_revalidation_finished=datetime.now(ET).isoformat()
             self._log("REVALIDATE",{
-                "limit":self.revalidate_limit,
+                "scanner_limit":self.revalidate_limit,
                 "candidate_count":len(results),
+                "monitored_count":len(monitored),
                 "results":results,
             })
             return {"status":"READY","results":results}
@@ -207,10 +236,8 @@ class BabyOperatingScheduler:
 
                 if hm==(9,15):
                     run_once("0915_SCAN",self._scan)
-
                 if hm==(9,35):
                     run_once("0935_REVALIDATE",self._revalidate)
-
                 if hm==(15,30):
                     run_once("1530_SCAN",self._scan)
                 elif (
@@ -222,9 +249,5 @@ class BabyOperatingScheduler:
                     if not seen.get(k):
                         seen[k]=True
                         self._scan()
-
             except Exception as exc:
-                self._log("SCHEDULER_LOOP_ERROR",{
-                    "kind":type(exc).__name__,
-                    "error":str(exc),
-                })
+                self._log("SCHEDULER_LOOP_ERROR",{"kind":type(exc).__name__,"error":str(exc)})
