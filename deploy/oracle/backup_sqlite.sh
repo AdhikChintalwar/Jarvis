@@ -16,8 +16,10 @@ backup_db() {
   fi
 }
 
-backup_db "$PROJECT_DIR/data/baby_investment_monitor.db"
-backup_db "$PROJECT_DIR/data/baby_production.db"
+for db in "$PROJECT_DIR"/data/*.db; do
+  [ -e "$db" ] || continue
+  backup_db "$db"
+done
 
 find "$BACKUP_DIR" -type f -mtime +14 -delete
 
