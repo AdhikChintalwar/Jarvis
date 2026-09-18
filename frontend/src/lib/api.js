@@ -1,4 +1,12 @@
 export const api={
+ productionHealth:()=>fetch('/api/production/health').then(r=>r.json()),
+ productionDecision:(s,p={})=>fetch(`/api/production/decision/${s}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()),
+ monitorJobs:()=>fetch('/api/monitor/jobs').then(r=>r.json()),
+ monitorEvents:(s='')=>fetch('/api/monitor/events'+(s?`?symbol=${encodeURIComponent(s)}`:'')).then(r=>r.json()),
+ monitorRegister:(s,p={})=>fetch(`/api/monitor/jobs/${s}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()),
+ monitorRun:s=>fetch(`/api/monitor/jobs/${s}/run`,{method:'POST'}).then(r=>r.json()),
+ monitorDisable:s=>fetch(`/api/monitor/jobs/${s}`,{method:'DELETE'}).then(r=>r.json()),
+
  health:()=>fetch('/api/health').then(r=>r.json()),
  glossary:()=>fetch('/api/glossary').then(r=>r.json()),
  legend:()=>fetch('/api/research/legend/all').then(r=>r.json()),

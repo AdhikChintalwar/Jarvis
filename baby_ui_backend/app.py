@@ -330,7 +330,25 @@ def v11_run(symbol:str,force:bool=False,record:bool=True):
 # --- Baby Production Candidate ---------------------------------------------------
 from investor.production import ProductionCandidate
 from investor.production.monitoring import MonitoringStore
+from investor.production.investment_monitor import InvestmentMonitorStore, InvestmentMonitorWorker
 production_candidate=ProductionCandidate()
+# V13 monitor bootstrap
+investment_monitor_store = InvestmentMonitorStore()
+
+def _monitor_decision(symbol: str):
+    flow = _v10_build_full_flow(symbol, force=False)
+    research = flow.get('research') or {}
+    v106 = flow.get('v106') or flow.get('v10_6') or {}
+    v11 = v11_platform.build(symbol, research, v106, flow.get('portfolio') or {})
+    return production_candidate.decision.evaluate(v11, flow.get('portfolio') or {})
+
+investment_monitor_worker = InvestmentMonitorWorker(
+    investment_monitor_store,
+    evaluator=_monitor_decision,
+    quote_getter=lambda symbol: execution_quote_service.get(symbol),
+)
+investment_monitor_worker.start()
+
 production_monitor=MonitoringStore()
 
 @app.get('/api/production/health')
@@ -355,3 +373,107 @@ def production_position_evaluate(payload:dict):
 @app.post('/api/production/etf/{symbol}/thesis')
 def production_etf_thesis(symbol:str,payload:dict):
     return production_candidate.etf.evaluate(symbol.upper(),payload.get('intelligence') or payload)
+
+
+@app.post('/api/production/decision/{symbol}')
+def production_decision(symbol:str,payload:dict):
+    symbol=symbol.upper()
+    force=bool(payload.get('force',False))
+    record_v11=bool(payload.get('record_v11',True))
+
+    flow=_v10_build_full_flow(symbol,force=force)
+    p=REPORT_DIR/f'{symbol}.json'
+    research=json.loads(p.read_text())
+    v106=flow.get('intelligence_v106') or v106_intelligence.build(symbol,research)
+    v11=v11_platform.build(symbol,research,v106,flow,record=record_v11)
+
+    portfolio_state=payload.get('portfolio')
+    if portfolio_state is None:
+        portfolio_state=flow.get('portfolio') or {}
+
+    out=production_candidate.decision.evaluate(v11,portfolio_state)
+    out['source']='BABY_V11_TO_V12'
+    out['execution']='NONE'
+    return out
+
+
+@app.post('/api/production/canary/{symbol}')
+def production_canary(symbol:str,payload:dict):
+    symbol=symbol.upper()
+
+    decision_payload={
+        'force':bool(payload.get('force',False)),
+        'record_v11':bool(payload.get('record_v11',True)),
+    }
+    if 'portfolio' in payload:
+        decision_payload['portfolio']=payload.get('portfolio')
+
+    decision=production_decision(symbol,decision_payload)
+    order=dict(payload.get('order') or {})
+    order['symbol']=symbol
+
+    admission=production_candidate.canary.evaluate(
+        decision,
+        order,
+        payload.get('confirmation'),
+    )
+
+    result={
+        'symbol':symbol,
+        'decision':decision,
+        'canary_gate':admission,
+        'submitted':False,
+        'broker_response':None,
+    }
+
+    if not bool(payload.get('submit',False)):
+        result['status']='DRY_RUN'
+        return result
+
+    if not admission.get('eligible'):
+        result['status']='BLOCKED'
+        return result
+
+    broker_order=admission['order']
+    broker_response=alpaca_submit(broker_order)
+    result['submitted']=True
+    result['broker_response']=broker_response
+    result['status']='SUBMITTED'
+    production_candidate.ledger.audit(
+        'LIVE_CANARY_SUBMITTED',
+        (decision.get('proposal') or {}).get('id'),
+        {
+            'symbol':symbol,
+            'notional':broker_order.get('notional'),
+            'broker_response':broker_response,
+        },
+    )
+    return result
+
+
+
+@app.get('/api/monitor/jobs')
+def monitor_jobs():
+    return {'status':'READY','jobs':investment_monitor_store.list()}
+
+@app.get('/api/monitor/events')
+def monitor_events(symbol: str | None = None, limit: int = 100):
+    return {'status':'READY','events':investment_monitor_store.events(symbol,limit)}
+
+@app.post('/api/monitor/jobs/{symbol}')
+def monitor_register(symbol: str, payload: dict | None = None):
+    payload=payload or {}
+    return investment_monitor_store.upsert(
+        symbol,
+        interval_minutes=int(payload.get('interval_minutes') or 5),
+        thesis_review_minutes=int(payload.get('thesis_review_minutes') or 30),
+        baseline=payload.get('baseline') or {},
+    )
+
+@app.delete('/api/monitor/jobs/{symbol}')
+def monitor_disable(symbol: str):
+    return investment_monitor_store.disable(symbol) or {'status':'NOT_FOUND'}
+
+@app.post('/api/monitor/jobs/{symbol}/run')
+def monitor_run(symbol: str):
+    return investment_monitor_worker.run_one(symbol)
