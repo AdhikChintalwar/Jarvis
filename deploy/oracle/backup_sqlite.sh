@@ -17,6 +17,7 @@ backup_db() {
 }
 
 backup_db "$PROJECT_DIR/data/baby_investment_monitor.db"
+backup_db "$PROJECT_DIR/data/baby_production.db"
 
 find "$BACKUP_DIR" -type f -mtime +14 -delete
 
