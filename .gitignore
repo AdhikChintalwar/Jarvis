@@ -50,7 +50,6 @@ core/jarvis_memory.json
 core/user_memory.json
 data/workspace_context.json
 
-dati/
 
 data/events.jsonl
 data/portal_state.json
@@ -58,7 +57,6 @@ data/portal_state.json
 data/baby_automations.db
 data/baby_automations.db-shm
 data/baby_automations.db-wal
-.env
 # Local backup files
 *.bak
 
@@ -70,3 +68,5 @@ data/baby_automations.db-wal
 # Temporary patch helpers
 apply_v*.py
 verify_v*.py
+*.py[cod]
+*.save
