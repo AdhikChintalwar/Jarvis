@@ -435,8 +435,8 @@ class SubscriberEmailService:
             )
 
         body=(
-            f'<h1 style="font-size:28px;line-height:1.25;margin:14px 0 4px;color:#eef7ff">{e(symbol)} setup ready for review</h1>'
-            f'<div style="color:#7890a6;font-size:13px;margin-bottom:22px">{e(company)}</div>'
+            f'<h1 style="font-size:28px;line-height:1.25;margin:14px 0 4px;color:#eef7ff">{e(symbol)} — {e(company)}</h1>'
+            f'<div style="color:#7890a6;font-size:13px;margin-bottom:22px">Setup ready for review</div>'
             '<div style="padding:16px;border:1px solid #23506c;background:#0a1c2a;border-radius:14px;margin:18px 0">'
             '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em">SETUP STATUS</div>'
             f'<div style="color:#eef7ff;font-size:21px;font-weight:800;margin-top:7px">{e(state)}</div>'
@@ -477,7 +477,7 @@ class SubscriberEmailService:
     def _build_setup_email(self,symbol,decision,previous_state):
         symbol=symbol.upper(); report=self._load_report(symbol); cand=self._scanner_candidate(symbol); paper=self._proposal(decision); state,_=self._state(decision); company=report.get('company_name') or cand.get('name') or cand.get('company_name') or symbol; why=self._why_noticed(cand,report,decision); news=self._recent_news(symbol,company); reason=paper.get('reason')
         if reason=='All deterministic paper-proposal gates passed.':reason=f'The deterministic setup is active ({state}) and all current proposal gates passed.'
-        reason=reason or f"Baby's deterministic setup is currently {state}."; risk=paper.get('risk_level') or report.get('risk') or 'UNKNOWN'; subject=f'Baby — {symbol} setup ready for review'
+        reason=reason or f"Baby's deterministic setup is currently {state}."; risk=paper.get('risk_level') or report.get('risk') or 'UNKNOWN'; subject=f'Baby — {symbol} ({company}) — setup ready for review'
         parts=['BABY — SETUP READY','',f'{symbol} — {company}',f"Current price: {_money(paper.get('quote_price'))}",'','WHY BABY NOTICED THIS STOCK',*[f'- {x}' for x in why],'','WHY IT MATTERS NOW',reason,f"State change: {previous_state or 'FIRST READY OBSERVATION'} -> {state}",'','RELEVANT NEWS / CATALYST',*self._news_lines(news),'','TRADE PLAN',f'Setup: {state}',f"Planned entry: {_money(paper.get('entry_price'))}",f"Invalidation: {_money(paper.get('invalidation'))}",f"Target 1: {_money(paper.get('target_1'))}",f"Target 2: {_money(paper.get('target_2'))}",f"R/R Target 1: {_rr(paper.get('rr_target_1'))}",f"R/R Target 2: {_rr(paper.get('rr_target_2'))}",'','MAIN RISK',f"Current Baby risk level: {risk}. The stored invalidation level is {_money(paper.get('invalidation'))}.",'','Research/setup alert only. No trade was placed.','Position size is intentionally omitted because each subscriber must make decisions using their own account and risk limits.','AI execution authority: NONE. Real-money execution: DISABLED.']
         text_body='\n'.join(parts)
         html_body=self._setup_html(symbol,company,state,reason,previous_state,why,news,paper,risk)
@@ -491,9 +491,30 @@ class SubscriberEmailService:
         self.v155_store.record(intel)
         event=v155_choose_event(intel,previous)
         if not event:return {"event":None,"intelligence":intel.as_dict()}
+
+        company=report.get('company_name') or cand.get('company_name') or cand.get('name') or symbol
+
+        # CATALYST_UPDATE must be genuinely company-specific.
+        # Generic market/news headlines are not subscriber-worthy merely
+        # because the source/event classifier rated them MEDIUM/HIGH.
+        if event=='CATALYST_UPDATE':
+            headline=(intel.catalyst.headline or '').strip()
+            if not self._is_company_specific_headline(
+                {'headline': headline},
+                symbol,
+                company,
+            ):
+                return {
+                    "event":None,
+                    "suppressed_event":"CATALYST_UPDATE",
+                    "reason":"CATALYST_NOT_COMPANY_SPECIFIC",
+                    "intelligence":intel.as_dict(),
+                }
+
         if not self.v155_store.should_email(symbol,event,intel.fingerprint):return {"event":"DEDUPED","intelligence":intel.as_dict()}
         context=(report.get('market_context') or report.get('v156_market_context') or report.get('context') or {})
-        subject,text_body,html_body=v155_build_email(intel,event,context)
+        paper=self._proposal(decision)
+        subject,text_body,html_body=v155_build_email(intel,event,context,company,paper)
         sent=failed=0
         for sub in self.store.verified():
             key=f"v155:{event}:{symbol}:{intel.fingerprint}"
