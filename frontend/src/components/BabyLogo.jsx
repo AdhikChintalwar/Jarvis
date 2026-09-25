@@ -1,11 +1,11 @@
-import React from 'react';
-
-export default function BabyLogo({compact=false,className=''}) {
+export default function BabyLogo({ compact = false, className = '' }) {
   return (
-    <img
-      className={`babyWordmark ${compact ? 'compact' : ''} ${className}`.trim()}
-      src="/baby-logo.png"
-      alt="BABY Investment Research"
-    />
+    <span className={`babyWordmarkFrame ${compact ? 'compact' : ''}`}>
+      <img
+        className={`babyWordmark ${compact ? 'compact' : ''} ${className}`.trim()}
+        src="/baby-logo-transparent.png"
+        alt="BABY Investment Research"
+      />
+    </span>
   );
 }

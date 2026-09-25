@@ -301,15 +301,15 @@ class SubscriberEmailService:
         html_body=email_shell(
             'Alerts Verified',
             'Baby research alerts are enabled.',
-            '<h1 style="font-size:26px;margin:12px 0;color:#eef7ff">Research alerts enabled</h1>'
-            '<p style="color:#8fa5ba;line-height:1.65">Your email is verified for Baby research and setup alerts.</p>'
-            '<div style="margin:20px 0;padding:16px;border:1px solid #24445d;background:#0a1c2a;border-radius:14px">'
-            '<div style="color:#67dff0;font-size:11px;letter-spacing:.12em;font-weight:800">WHAT YOU MAY RECEIVE</div>'
-            '<div style="margin-top:8px;color:#a7bacb;line-height:1.7">Why Baby noticed a stock, what changed, company-specific news, trade-plan levels, risk context, and data freshness.</div>'
+            '<h1 style="font-size:26px;margin:12px 0;color:#102a43">Research alerts enabled</h1>'
+            '<p style="color:#526d82;line-height:1.65">Your email is verified for Baby research and setup alerts.</p>'
+            '<div style="margin:20px 0;padding:16px;border:1px solid #cbd9e6;background:#f4f8fc;border-radius:14px">'
+            '<div style="color:#1769aa;font-size:11px;letter-spacing:.12em;font-weight:800">WHAT YOU MAY RECEIVE</div>'
+            '<div style="margin-top:8px;color:#486581;line-height:1.7">Why Baby noticed a stock, what changed, company-specific news, trade-plan levels, risk context, and data freshness.</div>'
             '</div>'
-            '<div style="margin:20px 0;padding:16px;border:1px solid #293d58;background:#0c1725;border-radius:14px">'
-            '<div style="color:#67dff0;font-size:11px;letter-spacing:.12em;font-weight:800">AUTHORITY</div>'
-            '<div style="margin-top:8px;color:#eef7ff;line-height:1.7">AI execution authority: NONE<br>Real-money execution: DISABLED</div>'
+            '<div style="margin:20px 0;padding:16px;border:1px solid #d2deea;background:#f7fafd;border-radius:14px">'
+            '<div style="color:#1769aa;font-size:11px;letter-spacing:.12em;font-weight:800">AUTHORITY</div>'
+            '<div style="margin-top:8px;color:#102a43;line-height:1.7">AI execution authority: NONE<br>Real-money execution: DISABLED</div>'
             '</div>'
         )
         try:self.mailer.send(sub['email'],subject,body,html_body);self.store.record_delivery(sub['id'],sub['email'],None,'VERIFIED',key,'SENT',subject)
@@ -404,15 +404,15 @@ class SubscriberEmailService:
                 source=str(item.get('source') or 'UNKNOWN').strip()
                 when=str(item.get('created_at') or item.get('published_at') or 'time unknown').strip()
                 chunks.append(
-                    '<div style="padding:10px 0;border-bottom:1px solid #183349">'
-                    f'<div style="color:#e9f4ff;font-size:13px;line-height:1.55">{e(headline)}</div>'
-                    f'<div style="color:#678096;font-size:11px;margin-top:4px">{e(source)} · {e(when)}</div>'
+                    '<div style="padding:10px 0;border-bottom:1px solid #d7e3ef">'
+                    f'<div style="color:#102a43;font-size:13px;line-height:1.55">{e(headline)}</div>'
+                    f'<div style="color:#627d98;font-size:11px;margin-top:4px">{e(source)} · {e(when)}</div>'
                     '</div>'
                 )
             news_html=''.join(chunks)
             catalyst_note='Headline timing does not establish price causality. Causality: NOT_ESTABLISHED.'
         else:
-            news_html="<div style='color:#8fa5ba;font-size:13px;line-height:1.6'>No significant company-specific catalyst was identified in Baby's configured news feed at alert time.</div>"
+            news_html="<div style='color:#526d82;font-size:13px;line-height:1.6'>No significant company-specific catalyst was identified in Baby's configured news feed at alert time.</div>"
             catalyst_note='The setup is based primarily on deterministic market/research evidence. Causality: NOT_ESTABLISHED.'
 
         rows=[
@@ -426,49 +426,49 @@ class SubscriberEmailService:
         ]
         table_rows=''
         for i,(label,value) in enumerate(rows):
-            border='border-bottom:1px solid #183349;' if i < len(rows)-1 else ''
+            border='border-bottom:1px solid #d7e3ef;' if i < len(rows)-1 else ''
             table_rows+=(
                 '<tr>'
-                f'<td style="padding:9px 0;{border}color:#7890a6;font-size:13px">{e(label)}</td>'
-                f'<td align="right" style="padding:9px 0;{border}color:#eef7ff;font-size:13px;font-weight:700">{e(value)}</td>'
+                f'<td style="padding:9px 0;{border}color:#627d98;font-size:13px">{e(label)}</td>'
+                f'<td align="right" style="padding:9px 0;{border}color:#102a43;font-size:13px;font-weight:700">{e(value)}</td>'
                 '</tr>'
             )
 
         body=(
-            f'<h1 style="font-size:28px;line-height:1.25;margin:14px 0 4px;color:#eef7ff">{e(symbol)} — {e(company)}</h1>'
-            f'<div style="color:#7890a6;font-size:13px;margin-bottom:22px">Setup ready for review</div>'
-            '<div style="padding:16px;border:1px solid #23506c;background:#0a1c2a;border-radius:14px;margin:18px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em">SETUP STATUS</div>'
-            f'<div style="color:#eef7ff;font-size:21px;font-weight:800;margin-top:7px">{e(state)}</div>'
-            f'<div style="color:#8199ae;font-size:13px;line-height:1.6;margin-top:8px">{e(reason)}</div>'
+            f'<h1 style="font-size:28px;line-height:1.25;margin:14px 0 4px;color:#102a43">{e(symbol)} — {e(company)}</h1>'
+            f'<div style="color:#627d98;font-size:13px;margin-bottom:22px">Setup ready for review</div>'
+            '<div style="padding:16px;border:1px solid #bfd3e5;background:#f4f8fc;border-radius:14px;margin:18px 0">'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em">SETUP STATUS</div>'
+            f'<div style="color:#102a43;font-size:21px;font-weight:800;margin-top:7px">{e(state)}</div>'
+            f'<div style="color:#627d98;font-size:13px;line-height:1.6;margin-top:8px">{e(reason)}</div>'
             '</div>'
             '<div style="margin:24px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:10px">WHY BABY NOTICED THIS STOCK</div>'
-            f'<ul style="margin:0;padding-left:20px;color:#a7bacb;font-size:13px;line-height:1.65">{why_html}</ul>'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:10px">WHY BABY NOTICED THIS STOCK</div>'
+            f'<ul style="margin:0;padding-left:20px;color:#486581;font-size:13px;line-height:1.65">{why_html}</ul>'
             '</div>'
             '<div style="margin:24px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">WHAT CHANGED / WHY NOW</div>'
-            f'<div style="color:#a7bacb;font-size:13px;line-height:1.65">{e(reason)}</div>'
-            f'<div style="color:#71899e;font-size:12px;margin-top:8px">State change: {e(transition)}</div>'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">WHAT CHANGED / WHY NOW</div>'
+            f'<div style="color:#486581;font-size:13px;line-height:1.65">{e(reason)}</div>'
+            f'<div style="color:#627d98;font-size:12px;margin-top:8px">State change: {e(transition)}</div>'
             '</div>'
             '<div style="margin:24px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">TRADE PLAN</div>'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">TRADE PLAN</div>'
             f'<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">{table_rows}</table>'
             '</div>'
             '<div style="margin:24px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">MAIN RISK</div>'
-            f'<div style="color:#a7bacb;font-size:13px;line-height:1.65">Current Baby risk level: <b style="color:#eef7ff">{e(risk)}</b>. Stored invalidation: <b style="color:#eef7ff">{e(_money(paper.get("invalidation")))}</b>.</div>'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">MAIN RISK</div>'
+            f'<div style="color:#486581;font-size:13px;line-height:1.65">Current Baby risk level: <b style="color:#102a43">{e(risk)}</b>. Stored invalidation: <b style="color:#102a43">{e(_money(paper.get("invalidation")))}</b>.</div>'
             '</div>'
             '<div style="margin:24px 0">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">CATALYSTS & COMPANY NEWS</div>'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">CATALYSTS & COMPANY NEWS</div>'
             f'{news_html}'
-            f'<div style="color:#71899e;font-size:11px;line-height:1.55;margin-top:10px">{e(catalyst_note)}</div>'
+            f'<div style="color:#627d98;font-size:11px;line-height:1.55;margin-top:10px">{e(catalyst_note)}</div>'
             '</div>'
-            '<div style="margin:24px 0;padding:14px;border:1px solid #223b50;background:#091725;border-radius:12px">'
-            '<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">DATA FRESHNESS</div>'
-            f'<div style="color:#8fa5ba;font-size:12px;line-height:1.65">Quote provider: {e(provider)}<br>Quote age: {e(freshness)}<br>Quote as-of: {e(quote_asof or "UNKNOWN")}</div>'
+            '<div style="margin:24px 0;padding:14px;border:1px solid #d2deea;background:#f7fafd;border-radius:12px">'
+            '<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:8px">DATA FRESHNESS</div>'
+            f'<div style="color:#526d82;font-size:12px;line-height:1.65">Quote provider: {e(provider)}<br>Quote age: {e(freshness)}<br>Quote as-of: {e(quote_asof or "UNKNOWN")}</div>'
             '</div>'
-            '<div style="margin-top:22px;padding:13px;border:1px solid #293d58;background:#0c1725;border-radius:11px;color:#93a9bd;font-size:12px;line-height:1.65">'
+            '<div style="margin-top:22px;padding:13px;border:1px solid #d2deea;background:#f7fafd;border-radius:11px;color:#526d82;font-size:12px;line-height:1.65">'
             'Baby determines the trade plan only. Quantity is intentionally omitted; you choose the Alpaca PAPER quantity manually.'
             '</div>'
         )

@@ -140,47 +140,47 @@ def build_email(x,event,market_context=None,company_name=None,paper=None):
     display_name=f'{x.symbol} — {company}' if company and company.upper()!=x.symbol.upper() else x.symbol
     plan_lines=_plan_lines(paper)
 
-    body=f'''<h1 style="font-size:27px;margin:12px 0 4px;color:#eef7ff">{e(display_name)}</h1>
-<div style="color:#67dff0;font-size:12px;font-weight:800;letter-spacing:.10em;margin-bottom:7px">{e(event_title)}</div>
-<div style="color:#7f96aa;font-size:13px;margin-bottom:20px">Stage: {e(x.stage)} · Phase: {e(x.phase)} · Setup type: {e(x.setup_type)}</div>
+    body=f'''<h1 style="font-size:27px;margin:12px 0 4px;color:#102a43">{e(display_name)}</h1>
+<div style="color:#1769aa;font-size:12px;font-weight:800;letter-spacing:.10em;margin-bottom:7px">{e(event_title)}</div>
+<div style="color:#627d98;font-size:13px;margin-bottom:20px">Stage: {e(x.stage)} · Phase: {e(x.phase)} · Setup type: {e(x.setup_type)}</div>
 
-<div style="padding:15px;border:1px solid #21455d;background:#0a1b29;border-radius:12px;margin:18px 0">
-<div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em">OBSERVED FACTS</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.observed_facts)}</ul></div>
+<div style="padding:15px;border:1px solid #c9d9e8;background:#f4f8fc;border-radius:12px;margin:18px 0">
+<div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em">OBSERVED FACTS</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.observed_facts)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">WHY BABY NOTICED / WHAT CHANGED</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(_change_lines(x,event))}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">WHY BABY NOTICED / WHAT CHANGED</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(_change_lines(x,event))}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CATALYST / NEWS</div>
-<div style="color:#eef7ff;font-weight:700">{e(c.headline or 'No material company-specific catalyst established.')}</div>
-<div style="color:#71899e;font-size:12px;margin-top:6px">Type: {e(c.event_type)} · Strength: {e(c.strength)} · Source tier: {e(c.source_tier)}<br>Causality: {e(c.causality)}</div></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CATALYST / NEWS</div>
+<div style="color:#102a43;font-weight:700">{e(c.headline or 'No material company-specific catalyst established.')}</div>
+<div style="color:#627d98;font-size:12px;margin-top:6px">Type: {e(c.event_type)} · Strength: {e(c.strength)} · Source tier: {e(c.source_tier)}<br>Causality: {e(c.causality)}</div></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">PRICE + FLOW</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(_flow_lines(x))}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">PRICE + FLOW</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(_flow_lines(x))}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">RESEARCH / TRADE PLAN SNAPSHOT</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(plan_lines)}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">RESEARCH / TRADE PLAN SNAPSHOT</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(plan_lines)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CAPITAL STRUCTURE RISK</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(_capital_lines(x))}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CAPITAL STRUCTURE RISK</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(_capital_lines(x))}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">MARKET CONTEXT</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(context_lines)}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">MARKET CONTEXT</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(context_lines)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">BABY INTERPRETATION</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.interpretation)}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">BABY INTERPRETATION</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.interpretation)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CONTRADICTING EVIDENCE</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.contradicting_evidence)}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">CONTRADICTING EVIDENCE</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.contradicting_evidence)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">NEXT CONDITION TO WATCH</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.next_conditions)}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">NEXT CONDITION TO WATCH</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(x.next_conditions)}</ul></div>
 
-<div style="margin:24px 0"><div style="color:#67dff0;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">WHAT WOULD MAKE BABY CHANGE ITS MIND</div>
-<ul style="color:#b3c3d1;font-size:13px;line-height:1.65;padding-left:20px">{_li(_change_mind_lines(x))}</ul></div>
+<div style="margin:24px 0"><div style="color:#1769aa;font-size:11px;font-weight:800;letter-spacing:.12em;margin-bottom:9px">WHAT WOULD MAKE BABY CHANGE ITS MIND</div>
+<ul style="color:#486581;font-size:13px;line-height:1.65;padding-left:20px">{_li(_change_mind_lines(x))}</ul></div>
 
-<div style="padding:14px;border:1px solid #293d58;background:#0c1725;border-radius:11px;color:#93a9bd;font-size:12px;line-height:1.65">
-STATUS: <b style="color:#eef7ff">{e(x.monitoring_signal)}</b><br>
+<div style="padding:14px;border:1px solid #d2deea;background:#f7fafd;border-radius:11px;color:#526d82;font-size:12px;line-height:1.65">
+STATUS: <b style="color:#102a43">{e(x.monitoring_signal)}</b><br>
 Evidence score: {x.evidence_score}/100 — research attractiveness, not a probability.<br>
 Quantity is USER_SELECTED. No order is placed by this email.</div>'''
 
