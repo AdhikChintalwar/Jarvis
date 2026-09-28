@@ -13,7 +13,7 @@ import smtplib
 import sqlite3
 import ssl
 
-from .v155_intelligence import analyze as v155_analyze
+from .v1510_opportunity import analyze as v155_analyze
 from .v155_pipeline import V155PipelineStore
 from .v155_email import choose_event as v155_choose_event, build_email as v155_build_email
 

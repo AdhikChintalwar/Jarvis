@@ -438,11 +438,20 @@ production_candidate=ProductionCandidate()
 investment_monitor_store = InvestmentMonitorStore()
 
 def _monitor_decision(symbol: str):
+    # V15.10.5: scheduled/worker revalidation must use the same production
+    # decision inputs as /api/production/decision. In particular, V11 needs
+    # the FULL V10 flow so current_setup + paper_proposal survive into the
+    # production decision consumed by monitored-setups and subscriber email.
+    symbol = symbol.upper()
     flow = _v10_build_full_flow(symbol, force=False)
-    research = flow.get('research') or {}
-    v106 = flow.get('v106') or flow.get('v10_6') or {}
-    v11 = v11_platform.build(symbol, research, v106, flow.get('portfolio') or {})
-    return production_candidate.decision.evaluate(v11, flow.get('portfolio') or {})
+    p = REPORT_DIR / f'{symbol}.json'
+    research = json.loads(p.read_text())
+    v106 = flow.get('intelligence_v106') or v106_intelligence.build(symbol, research)
+    v11 = v11_platform.build(symbol, research, v106, flow, record=False)
+    out = production_candidate.decision.evaluate(v11, flow.get('portfolio') or {})
+    out['source'] = 'BABY_V11_TO_V12_MONITOR'
+    out['execution'] = 'NONE'
+    return out
 
 investment_monitor_worker = InvestmentMonitorWorker(
     investment_monitor_store,
