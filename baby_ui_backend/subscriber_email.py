@@ -18,6 +18,7 @@ from .v155_pipeline import V155PipelineStore
 from .v155_email import choose_event as v155_choose_event, build_email as v155_build_email
 
 from .email_branding import email_shell, verification_html, BABY_EMAIL_LOGO_PATH, BABY_EMAIL_LOGO_CID
+from .v1511_email_style import setup_ready_decorate
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -481,6 +482,7 @@ class SubscriberEmailService:
         parts=['BABY — SETUP READY','',f'{symbol} — {company}',f"Current price: {_money(paper.get('quote_price'))}",'','WHY BABY NOTICED THIS STOCK',*[f'- {x}' for x in why],'','WHY IT MATTERS NOW',reason,f"State change: {previous_state or 'FIRST READY OBSERVATION'} -> {state}",'','RELEVANT NEWS / CATALYST',*self._news_lines(news),'','TRADE PLAN',f'Setup: {state}',f"Planned entry: {_money(paper.get('entry_price'))}",f"Invalidation: {_money(paper.get('invalidation'))}",f"Target 1: {_money(paper.get('target_1'))}",f"Target 2: {_money(paper.get('target_2'))}",f"R/R Target 1: {_rr(paper.get('rr_target_1'))}",f"R/R Target 2: {_rr(paper.get('rr_target_2'))}",'','MAIN RISK',f"Current Baby risk level: {risk}. The stored invalidation level is {_money(paper.get('invalidation'))}.",'','Research/setup alert only. No trade was placed.','Position size is intentionally omitted because each subscriber must make decisions using their own account and risk limits.','AI execution authority: NONE. Real-money execution: DISABLED.']
         text_body='\n'.join(parts)
         html_body=self._setup_html(symbol,company,state,reason,previous_state,why,news,paper,risk)
+        html_body=setup_ready_decorate(html_body,symbol,paper)
         return subject,text_body,html_body
     def _v155_record_and_maybe_email(self,symbol,decision):
         symbol=symbol.upper()

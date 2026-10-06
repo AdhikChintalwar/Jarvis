@@ -1,5 +1,6 @@
 from html import escape
 from .email_branding import email_shell
+from .v1511_email_style import research_monitor_decorate
 
 def e(v):return escape('' if v is None else str(v))
 
@@ -184,6 +185,7 @@ STATUS: <b style="color:#102a43">{e(x.monitoring_signal)}</b><br>
 Evidence score: {x.evidence_score}/100 — research attractiveness, not a probability.<br>
 Quantity is USER_SELECTED. No order is placed by this email.</div>'''
 
+    body=research_monitor_decorate(body,event)
     html=email_shell(event_title,f'{display_name}: Baby research state changed.',body)
 
     text='\n'.join([

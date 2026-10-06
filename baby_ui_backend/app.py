@@ -480,6 +480,13 @@ investment_monitor_worker = InvestmentMonitorWorker(
 investment_monitor_worker.start()
 def _candidate_revalidate_with_email(symbol:str):
     result=_monitor_decision(symbol)
+    # BABY V15.11 candidate observation: ledger/readiness/mobile PAPER approval.
+    try:
+        from .v1511_runtime import observe_candidate as _v1511_observe_candidate
+        _v1511_observe_candidate(symbol,result)
+    except Exception as _v1511_exc:
+        try: notifier.emit(dedupe_key=f'v1511-observe:{symbol}:{str(_v1511_exc)[:60]}',title=f'BABY — {symbol} V15.11 observation issue',message=str(_v1511_exc),severity='INFO',symbol=symbol)
+        except Exception: pass
     try:subscriber_email_service.handle_candidate_decision(symbol,result)
     except Exception as e:
         notifier.emit(dedupe_key=f'email-dispatch-error:{symbol}:{str(e)[:80]}',title=f'BABY — {symbol} email dispatch issue',message=str(e),severity='INFO',symbol=symbol)
@@ -634,4 +641,101 @@ def monitor_sync():
 @app.get('/api/scheduler/status')
 def scheduler_status():
     return baby_operating_scheduler.status()
+
+# ===== BABY V15.11 MOBILE PAPER APPROVAL + FORWARD VALIDATION ===================
+# PAPER ONLY. No real-money execution route is created by V15.11.
+from .v1511_runtime import ledger as v1511_ledger, approvals as v1511_approvals, readiness as v1511_readiness, HotWatchWorker as V1511HotWatchWorker
+from .v1511_mobile_approval import mobile_html as v1511_mobile_html, validate_user_quantity as v1511_validate_user_quantity
+
+@app.get('/api/v1511/forward-ledger')
+def v1511_forward_ledger(limit:int=200):
+    return {'status':'READY','rows':v1511_ledger.list(limit),'summary':v1511_ledger.summary(),'real_money_execution':'DISABLED'}
+
+@app.get('/api/v1511/readiness')
+def v1511_readiness_list(limit:int=100):
+    return {'status':'READY','rows':v1511_readiness.list(limit),'real_money_execution':'DISABLED'}
+
+@app.get('/api/v1511/paper-approvals')
+def v1511_paper_approvals(limit:int=100):
+    return {'status':'READY','rows':v1511_approvals.list(limit),'execution_authority':'USER_CONFIRMATION_ONLY','real_money_execution':'DISABLED'}
+
+@app.get('/api/paper-approval/{token}', response_class=__import__('fastapi.responses',fromlist=['HTMLResponse']).HTMLResponse)
+def v1511_paper_approval_page(token:str):
+    row=v1511_approvals.by_token(token,mark_open=True)
+    if not row: raise HTTPException(404,'Approval link not found.')
+    row=v1511_approvals.expire_if_needed(row)
+    proposal={}
+    message=''
+    try:
+        proposal=_alpaca_research_proposal(row['symbol'])
+        v1511_approvals.mark_revalidated(row['id'],proposal.get('reason'))
+    except Exception as exc:
+        message=f'Current setup could not be revalidated: {exc}'
+    row=dict(row);row['plain_token']=token
+    return v1511_mobile_html(row,proposal,message)
+
+@app.post('/api/paper-approval/{token}/execute')
+def v1511_paper_approval_execute(token:str,payload:dict):
+    row=v1511_approvals.by_token(token,mark_open=True)
+    if not row: raise HTTPException(404,'Approval link not found.')
+    row=v1511_approvals.expire_if_needed(row)
+    if row.get('status')!='PENDING': raise HTTPException(409,f"Approval is {row.get('status')}; it cannot be reused.")
+    proposal=_alpaca_research_proposal(row['symbol'])
+    if not (proposal.get('eligible') and str(proposal.get('status') or '').upper()=='ELIGIBLE'):
+        v1511_approvals.mark_revalidated(row['id'],proposal.get('reason') or 'Setup no longer eligible.')
+        raise HTTPException(409,proposal.get('reason') or 'Setup is no longer PAPER eligible.')
+    account=alpaca_broker.status()
+    ok,reason,gate=v1511_validate_user_quantity(payload.get('quantity'),proposal,account)
+    if not ok: raise HTTPException(409,reason)
+    confirmation=str(payload.get('confirmation') or '')
+    if confirmation!='EXECUTE ALPACA PAPER': raise HTTPException(409,'Type the exact confirmation phrase: EXECUTE ALPACA PAPER')
+    qty=int(gate['quantity'])
+
+    # Atomic PENDING -> EXECUTING claim prevents duplicate concurrent submissions.
+    if not v1511_approvals.claim_for_execution(row['id'],qty):
+        raise HTTPException(409,'Approval is no longer pending; duplicate submission blocked.')
+
+    try:
+        order=alpaca_broker.submit_confirmed_order(
+            symbol=row['symbol'],side='BUY',quantity=qty,
+            order_type='MARKET',confirmation=confirmation
+        )
+    except Exception as exc:
+        # Fail closed because an error can occur after the broker accepted the order.
+        v1511_approvals.mark_submit_unknown(row['id'],str(exc))
+        if isinstance(exc, PermissionError):
+            raise HTTPException(409,str(exc))
+        if isinstance(exc, ValueError):
+            raise HTTPException(400,str(exc))
+        raise HTTPException(503,str(exc))
+
+    oid=order.get('id') or order.get('order_id')
+    if not oid:
+        v1511_approvals.mark_submit_unknown(
+            row['id'],
+            'Broker response did not contain an order id; manual reconciliation required.'
+        )
+        raise HTTPException(
+            503,
+            'Alpaca PAPER response was missing an order id. Approval locked for manual reconciliation.'
+        )
+
+    v1511_approvals.mark_used(row['id'],qty,oid)
+    v1511_ledger.attach_order(row['symbol'],row['ready_episode'],order,qty)
+    try: notifier.emit(dedupe_key=f'v1511-paper-order:{oid}',title=f'BABY — {row["symbol"]} Alpaca PAPER order submitted',message=f'{qty} user-selected shares submitted to Alpaca PAPER. Real-money execution remains disabled.',severity='IMPORTANT',symbol=row['symbol'],force=True)
+    except Exception: pass
+    return {'status':'SUBMITTED','environment':'ALPACA_PAPER','proposal':proposal,'order':order,'quantity_source':'USER_SELECTED','quantity_gate':gate,'real_money_execution':'DISABLED'}
+
+# Hot-watch only the tiny near-ready/ready set; broad scanner cadence remains unchanged.
+try:
+    v1511_hot_watch_worker=V1511HotWatchWorker(
+        revalidate=_candidate_revalidate_with_email,
+        quote_getter=lambda s: execution_quote_service.get(s),
+        broker_orders=lambda limit=100: alpaca_broker.orders(limit),
+    )
+    v1511_hot_watch_worker.start()
+except Exception as _v1511_worker_exc:
+    v1511_hot_watch_worker=None
+
+# ===== END BABY V15.11 ==========================================================
 

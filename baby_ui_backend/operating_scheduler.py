@@ -10,6 +10,7 @@ import threading
 
 from .monitored_setups import MonitoredSetupStore
 from .notifications import NotificationEngine
+from .v1511_discovery import select_candidates as v1511_select_candidates
 
 ET=ZoneInfo("America/New_York")
 
@@ -116,7 +117,7 @@ class BabyOperatingScheduler:
         d=json.loads(p.read_text()) if p.exists() else {}
         rows=d.get("candidates") or d.get("results") or d.get("stocks") or []
         scanner=[]
-        for x in rows[:self.revalidate_limit]:
+        for x in v1511_select_candidates(rows,self.revalidate_limit):
             s=x.get("symbol") or x.get("ticker")
             if s:
                 scanner.append(str(s).upper())
