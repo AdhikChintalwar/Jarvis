@@ -7,11 +7,12 @@ from .alpaca_market import AlpacaMarketScreener
 from .v10_intelligence import V10IntelligenceService
 from .intelligence import V106IntelligencePlatform
 from .v11 import V11InvestmentPlatform
+from .v1513_awareness import BabyAwarenessService
 
 class BabyReadOnlyTools:
     """Read-only tool registry for Baby V9. No broker/order functions are exposed here."""
     def __init__(self, report_dir: Path):
-        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir); self.v106=V106IntelligencePlatform(); self.v11=V11InvestmentPlatform()
+        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir); self.v106=V106IntelligencePlatform(); self.v11=V11InvestmentPlatform(); self.awareness=BabyAwarenessService()
 
     def schemas(self)->list[dict[str,Any]]:
         return [
@@ -27,6 +28,8 @@ class BabyReadOnlyTools:
           {'name':'get_full_investment_flow','description':'Get Baby deterministic full research-to-trade flow including decision, risk, trade setup, entry/invalidation/targets and exit policy.','args':{'symbol_or_company':'string'}},
           {'name':'get_v11_analysis','description':'Get Baby V11 deterministic unified thesis, bull/bear evidence, expectations, decision intelligence and trade context.','args':{'symbol_or_company':'string'}},
           {'name':'get_trade_plan','description':'Get Baby production trade plan and deterministic exit policy for a researched symbol.','args':{'symbol_or_company':'string'}},
+          {'name':'get_baby_activity','description':'Read Baby persisted operational history for a symbol: readiness, setup history, email delivery proof, PAPER approvals/fills, T1/T2/stop outcomes and alerts. Use when the user asks what Baby previously sent, alerted, suggested, tracked, or what happened after a Baby setup.','args':{'symbol_or_company':'string'}},
+          {'name':'get_recent_baby_activity','description':'Read Baby recent persisted operational activity across symbols, including emails, readiness history, forward validation and alerts.','args':{'days':'integer 1-3650'}},
         ]
 
     def _resolve(self,x:str)->str:
@@ -99,5 +102,9 @@ class BabyReadOnlyTools:
             return self.v11.build(sym,r,v106,flow,record=False)
         if name=='get_trade_plan':
             sym=self._resolve(str(args.get('symbol_or_company') or '')); r=self.v10.load(sym); return {'symbol':sym,'trade_plan':r.get('trade_plan') if r.get('status')!='NOT_RESEARCHED' else None,'exit_policy':self.v10.exit_policy(r) if r.get('status')!='NOT_RESEARCHED' else None,'source':'Baby deterministic production research','authority':'DETERMINISTIC'}
+        if name=='get_baby_activity':
+            sym=self._resolve(str(args.get('symbol_or_company') or '')); return self.awareness.symbol_activity(sym)
+        if name=='get_recent_baby_activity':
+            return self.awareness.recent_activity(days=int(args.get('days') or 7))
         if name=='get_baby_capabilities': return {'name':'Baby','scope':['general conversation','investment education','current market quotes','market/company news','Baby production research','deterministic screening','full research-to-trade flow','deterministic entry/invalidation/targets','deterministic exit policy'],'authority':{'market_facts':'verified tool data','research_scores':'Baby deterministic engines','trade_levels':'Baby TradePlanAgent','AI_scoring_authority':'0%','chat_execution_authority':'NONE','real_money_execution':'DISABLED'},'limitations':['IEX is not consolidated SIP','news availability depends on Alpaca entitlement','missing evidence remains UNKNOWN','entry/exit levels are research/paper-trading scenarios until explicitly paper-executed']}
         raise ValueError(f'Unknown/read-prohibited tool: {name}')

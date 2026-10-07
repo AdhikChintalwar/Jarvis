@@ -4,6 +4,7 @@ from pathlib import Path
 from .research_knowledge import STAGE_KNOWLEDGE, STATUS_LEGEND, ABBREVIATIONS, stage_explanation
 from .alpaca_market import AlpacaMarketScreener
 from .agentic_copilot import BabyAgenticCopilot
+from .v1513_awareness import BabyAwarenessService
 
 TOPICS = {
     'RSI': {
@@ -90,7 +91,7 @@ class _SessionStore:
         with self._lock:self._data[sid]={**state,'_ts':time.time()}
 
 class BabyCopilot:
-    def __init__(self,report_dir:Path): self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.sessions=_SessionStore(); self.agentic=BabyAgenticCopilot(report_dir); self.last_agentic_fallback=None
+    def __init__(self,report_dir:Path): self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.sessions=_SessionStore(); self.agentic=BabyAgenticCopilot(report_dir); self.awareness=BabyAwarenessService(); self.last_agentic_fallback=None
     def _report(self,symbol):
         if not symbol:return None
         p=self.report_dir/f'{symbol.upper()}.json'
@@ -206,6 +207,19 @@ class BabyCopilot:
         return {'state':state,'requested_mode':requested,'provider':provider,'last_fallback':self.last_agentic_fallback,
                 'fallback_available':True,'AI_SCORING_AUTHORITY':'0%','CHAT_EXECUTION_AUTHORITY':'NONE','REAL_MONEY_EXECUTION':'DISABLED'}
 
+    def _baby_activity_intent(self,text):
+        low=(text or '').lower()
+        phrases=['did baby','did you send','sent an email','send an email','email me','emailed','what happened','reached t1','reach t1','hit t1','reached t2','reach t2','hit t2','paper fill','paper trade','paper order','setup you gave','setup baby gave','your setup','baby setup','alerted me','alert you sent','trade you gave','what did you give','what did baby give','stop hit','hit stop']
+        return any(x in low for x in phrases)
+
+    def _activity_symbol(self,text,incoming,state):
+        explicit=self._explicit_symbol_reference(text)
+        if explicit:return explicit.upper()
+        for key in ('symbol','active_symbol'):
+            value=(incoming or {}).get(key) or (state or {}).get(key)
+            if value:return str(value).upper()
+        return None
+
     def ask(self,message:str,context:dict|None=None,session_id:str|None=None)->dict:
         incoming=context or {}; text=(message or '').strip(); low=text.lower()
         if not text: raise ValueError('message is required')
@@ -227,6 +241,15 @@ class BabyCopilot:
         state=self.sessions.get(session_id)
         for k in ('symbol','stage_id','stage_label','page'):
             if incoming.get(k) not in (None,''):state[k]=incoming[k]
+        # V15.13: read-only operational self-awareness.
+        if self._baby_activity_intent(text):
+            activity_symbol=self._activity_symbol(text,incoming,state)
+            if activity_symbol:
+                data=self.awareness.symbol_activity(activity_symbol)
+                state['symbol']=activity_symbol; state['active_symbol']=activity_symbol; state['previous_intent']='BABY_ACTIVITY'
+                self.sessions.put(session_id,state)
+                return {'mode':'BABY_ACTIVITY','answer':data.get('summary') or f'No persisted Baby activity summary is available for {activity_symbol}.','data':data,'evidence':[{'label':f'{activity_symbol} · Baby persisted operational history','kind':'BABY_ACTIVITY'}],'context_state':self._state_public(state)}
+
         # Highest priority: an explicit fresh quote request overrides old UI/topic context.
         if self._quote_intent(text):
             q,resolved=self._current_quote(text,state)

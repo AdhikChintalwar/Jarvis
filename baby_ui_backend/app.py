@@ -743,3 +743,7 @@ except Exception as _v1511_worker_exc:
 from .v1512_reports import router as v1512_reports_router
 app.include_router(v1512_reports_router)
 # ===== END BABY V15.12 REPORTS =====
+
+# ===== BABY V15.13 READ-ONLY OPERATIONAL AWARENESS ==============================
+from .v1513_awareness import router as v1513_awareness_router
+app.include_router(v1513_awareness_router)
