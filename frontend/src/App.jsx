@@ -4,6 +4,7 @@ import Ideas from './pages/Ideas';
 import Research from './pages/Research';
 import Portfolio from './pages/Portfolio';
 import Alerts from './pages/Alerts';
+import Reports from './pages/Reports';
 import Backtests from './pages/Backtests';
 import Automations from './pages/Automations';
 import Markets from './pages/Markets';
@@ -28,6 +29,7 @@ const mainNav = [
   { id: 'ideas', label: 'Ideas', desc: 'Stocks Baby found', icon: Sparkles },
   { id: 'portfolio', label: 'Portfolio', desc: 'Positions & monitored setups', icon: BriefcaseBusiness },
   { id: 'alerts', label: 'Alerts', desc: 'Important changes', icon: Bell },
+  { id:'reports', label:'Reports', desc:'Daily + performance', icon: Activity },
 ];
 
 const researchNav = [
@@ -85,6 +87,7 @@ export default function App() {
       case 'ideas': return <Ideas openResearch={openResearch} />;
       case 'portfolio': return <Portfolio openResearch={openResearch} />;
       case 'alerts': return <Alerts />;
+      case 'reports': return <Reports />;
       case 'research': return <Research initialSymbol={symbol} />;
       case 'settings': return <Settings />;
       case 'docs': return <Documentation />;

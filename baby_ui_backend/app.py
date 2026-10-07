@@ -739,3 +739,7 @@ except Exception as _v1511_worker_exc:
 
 # ===== END BABY V15.11 ==========================================================
 
+# ===== BABY V15.12 REPORTS =====
+from .v1512_reports import router as v1512_reports_router
+app.include_router(v1512_reports_router)
+# ===== END BABY V15.12 REPORTS =====

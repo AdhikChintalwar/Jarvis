@@ -46,15 +46,36 @@ class ReadinessStore:
             db.execute("""CREATE TABLE IF NOT EXISTS v1511_readiness(
               symbol TEXT PRIMARY KEY,state TEXT NOT NULL,readiness_potential INTEGER NOT NULL,reason TEXT,
               setup_status TEXT,failures_json TEXT,updated_at TEXT NOT NULL)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS v1512_readiness_history(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              symbol TEXT NOT NULL,
+              state TEXT NOT NULL,
+              readiness_potential INTEGER,
+              reason TEXT,
+              setup_status TEXT,
+              failures_json TEXT,
+              observed_at TEXT NOT NULL
+            )""")
+            db.execute("""CREATE INDEX IF NOT EXISTS idx_v1512_hist_time
+              ON v1512_readiness_history(observed_at)""")
             db.commit()
     def observe(self,symbol,paper):
         import json
         c=classify(paper)
         with self._db() as db:
+            observed_at = _now()
+            failures_json = json.dumps(c['failures'])
+
             db.execute("""INSERT INTO v1511_readiness(symbol,state,readiness_potential,reason,setup_status,failures_json,updated_at)
               VALUES(?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET state=excluded.state,readiness_potential=excluded.readiness_potential,
               reason=excluded.reason,setup_status=excluded.setup_status,failures_json=excluded.failures_json,updated_at=excluded.updated_at""",
-              (symbol.upper(),c['state'],c['readiness_potential'],c['reason'],c['setup_status'],json.dumps(c['failures']),_now()))
+              (symbol.upper(),c['state'],c['readiness_potential'],c['reason'],c['setup_status'],failures_json,observed_at))
+
+            db.execute("""INSERT INTO v1512_readiness_history(
+              symbol,state,readiness_potential,reason,setup_status,failures_json,observed_at
+            ) VALUES(?,?,?,?,?,?,?)""",
+              (symbol.upper(),c['state'],c['readiness_potential'],c['reason'],c['setup_status'],failures_json,observed_at))
+
             db.commit()
         return c
     def list(self,limit=100):
