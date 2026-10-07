@@ -5,6 +5,7 @@ from .research_knowledge import STAGE_KNOWLEDGE, STATUS_LEGEND, ABBREVIATIONS, s
 from .alpaca_market import AlpacaMarketScreener
 from .agentic_copilot import BabyAgenticCopilot
 from .v1513_awareness import BabyAwarenessService
+from .v1514_gate_audit import GateAuditService
 
 TOPICS = {
     'RSI': {
@@ -91,7 +92,7 @@ class _SessionStore:
         with self._lock:self._data[sid]={**state,'_ts':time.time()}
 
 class BabyCopilot:
-    def __init__(self,report_dir:Path): self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.sessions=_SessionStore(); self.agentic=BabyAgenticCopilot(report_dir); self.awareness=BabyAwarenessService(); self.last_agentic_fallback=None
+    def __init__(self,report_dir:Path): self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.sessions=_SessionStore(); self.agentic=BabyAgenticCopilot(report_dir); self.awareness=BabyAwarenessService(); self.gate_audit=GateAuditService(); self.last_agentic_fallback=None
     def _report(self,symbol):
         if not symbol:return None
         p=self.report_dir/f'{symbol.upper()}.json'
@@ -220,6 +221,9 @@ class BabyCopilot:
             if value:return str(value).upper()
         return None
 
+    def _gate_audit_intent(self,text):
+        low=(text or '').lower(); phrases=['why no setup ready','why no setup_ready','what gates','which gates','gate too tough','gates too tough','too strict','blocking setups','what is blocking','near ready','near_ready','closest to ready','almost ready']; return any(x in low for x in phrases)
+
     def ask(self,message:str,context:dict|None=None,session_id:str|None=None)->dict:
         incoming=context or {}; text=(message or '').strip(); low=text.lower()
         if not text: raise ValueError('message is required')
@@ -249,6 +253,9 @@ class BabyCopilot:
                 state['symbol']=activity_symbol; state['active_symbol']=activity_symbol; state['previous_intent']='BABY_ACTIVITY'
                 self.sessions.put(session_id,state)
                 return {'mode':'BABY_ACTIVITY','answer':data.get('summary') or f'No persisted Baby activity summary is available for {activity_symbol}.','data':data,'evidence':[{'label':f'{activity_symbol} · Baby persisted operational history','kind':'BABY_ACTIVITY'}],'context_state':self._state_public(state)}
+
+        if self._gate_audit_intent(text):
+            data=self.gate_audit.overview(days=30); state['previous_intent']='GATE_AUDIT'; self.sessions.put(session_id,state); return {'mode':'GATE_AUDIT','answer':self.gate_audit.plain_summary(30),'data':data,'evidence':[{'label':'Baby V15.14 read-only gate audit','kind':'GATE_AUDIT'}],'context_state':self._state_public(state)}
 
         # Highest priority: an explicit fresh quote request overrides old UI/topic context.
         if self._quote_intent(text):

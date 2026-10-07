@@ -8,11 +8,12 @@ from .v10_intelligence import V10IntelligenceService
 from .intelligence import V106IntelligencePlatform
 from .v11 import V11InvestmentPlatform
 from .v1513_awareness import BabyAwarenessService
+from .v1514_gate_audit import GateAuditService
 
 class BabyReadOnlyTools:
     """Read-only tool registry for Baby V9. No broker/order functions are exposed here."""
     def __init__(self, report_dir: Path):
-        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir); self.v106=V106IntelligencePlatform(); self.v11=V11InvestmentPlatform(); self.awareness=BabyAwarenessService()
+        self.report_dir=Path(report_dir); self.market=AlpacaMarketScreener(); self.v10=V10IntelligenceService(self.report_dir); self.v106=V106IntelligencePlatform(); self.v11=V11InvestmentPlatform(); self.awareness=BabyAwarenessService(); self.gate_audit=GateAuditService()
 
     def schemas(self)->list[dict[str,Any]]:
         return [
@@ -24,6 +25,8 @@ class BabyReadOnlyTools:
           {'name':'get_market_context','description':'Get current SPY/QQQ/DIA/IWM snapshots for broad US market context.','args':{}},
           {'name':'get_baby_research','description':'Read Baby production research already generated for a symbol.','args':{'symbol_or_company':'string'}},
           {'name':'screen_price','description':'Deterministically screen active/tradable US equities by current price range.','args':{'min_price':'number','max_price':'number','limit':'integer'}},
+          {'name':'get_gate_audit','description':'Read-only gate audit: blocker frequency/categories and current informational NEAR_READY symbols.','args':{'days':'integer 1-3650'}},
+          {'name':'get_symbol_gate_audit','description':'Read-only gate audit for one symbol.','args':{'symbol_or_company':'string','days':'integer 1-3650'}},
           {'name':'get_baby_capabilities','description':'Describe Baby authority boundaries and available research tools.','args':{}},
           {'name':'get_full_investment_flow','description':'Get Baby deterministic full research-to-trade flow including decision, risk, trade setup, entry/invalidation/targets and exit policy.','args':{'symbol_or_company':'string'}},
           {'name':'get_v11_analysis','description':'Get Baby V11 deterministic unified thesis, bull/bear evidence, expectations, decision intelligence and trade context.','args':{'symbol_or_company':'string'}},
@@ -106,5 +109,9 @@ class BabyReadOnlyTools:
             sym=self._resolve(str(args.get('symbol_or_company') or '')); return self.awareness.symbol_activity(sym)
         if name=='get_recent_baby_activity':
             return self.awareness.recent_activity(days=int(args.get('days') or 7))
-        if name=='get_baby_capabilities': return {'name':'Baby','scope':['general conversation','investment education','current market quotes','market/company news','Baby production research','deterministic screening','full research-to-trade flow','deterministic entry/invalidation/targets','deterministic exit policy'],'authority':{'market_facts':'verified tool data','research_scores':'Baby deterministic engines','trade_levels':'Baby TradePlanAgent','AI_scoring_authority':'0%','chat_execution_authority':'NONE','real_money_execution':'DISABLED'},'limitations':['IEX is not consolidated SIP','news availability depends on Alpaca entitlement','missing evidence remains UNKNOWN','entry/exit levels are research/paper-trading scenarios until explicitly paper-executed']}
+                if name=='get_gate_audit':
+            return self.gate_audit.overview(days=int(args.get('days') or 30))
+        if name=='get_symbol_gate_audit':
+            sym=self._resolve(str(args.get('symbol_or_company') or '')); return self.gate_audit.symbol(sym,days=int(args.get('days') or 30))
+if name=='get_baby_capabilities': return {'name':'Baby','scope':['general conversation','investment education','current market quotes','market/company news','Baby production research','deterministic screening','full research-to-trade flow','deterministic entry/invalidation/targets','deterministic exit policy'],'authority':{'market_facts':'verified tool data','research_scores':'Baby deterministic engines','trade_levels':'Baby TradePlanAgent','AI_scoring_authority':'0%','chat_execution_authority':'NONE','real_money_execution':'DISABLED'},'limitations':['IEX is not consolidated SIP','news availability depends on Alpaca entitlement','missing evidence remains UNKNOWN','entry/exit levels are research/paper-trading scenarios until explicitly paper-executed']}
         raise ValueError(f'Unknown/read-prohibited tool: {name}')

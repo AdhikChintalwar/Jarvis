@@ -747,3 +747,7 @@ app.include_router(v1512_reports_router)
 # ===== BABY V15.13 READ-ONLY OPERATIONAL AWARENESS ==============================
 from .v1513_awareness import router as v1513_awareness_router
 app.include_router(v1513_awareness_router)
+
+# ===== BABY V15.14 READ-ONLY GATE AUDIT =====
+from .v1514_gate_audit import router as v1514_gate_audit_router
+app.include_router(v1514_gate_audit_router)
