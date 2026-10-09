@@ -751,3 +751,7 @@ app.include_router(v1513_awareness_router)
 # ===== BABY V15.14 READ-ONLY GATE AUDIT =====
 from .v1514_gate_audit import router as v1514_gate_audit_router
 app.include_router(v1514_gate_audit_router)
+
+# BABY V15.15 PAPER-ONLY AUTOPILOT CORE
+from .v1515_router import router as v1515_paper_autopilot_router
+app.include_router(v1515_paper_autopilot_router)
