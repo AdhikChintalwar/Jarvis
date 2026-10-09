@@ -560,6 +560,23 @@ class SubscriberEmailService:
         observed=self.store.observe_candidate_state(symbol,state,ready)
         prev_state=observed.get('previous_state')
         episode=int(observed.get('ready_episode') or 0)
+        if ready and observed.get('new_episode'):
+            try:
+                from .v1516_ntfy import secure_ntfy
+                paper_for_push=self._proposal(decision)
+                secure_ntfy.publish(
+                    title=f"BABY — {symbol} SETUP_READY",
+                    message=(
+                        f"{symbol} is SETUP_READY. "
+                        f"Entry {paper_for_push.get('entry_price')}; "
+                        f"Stop {paper_for_push.get('invalidation')}; "
+                        f"T1 {paper_for_push.get('target_1')}; "
+                        f"T2 {paper_for_push.get('target_2')}. PAPER only."
+                    ),
+                    symbol=symbol,episode=episode,
+                )
+            except Exception:
+                pass
 
         if not ready:
             return {

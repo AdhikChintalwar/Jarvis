@@ -780,3 +780,15 @@ app.include_router(v1514_gate_audit_router)
 # BABY V15.15 PAPER-ONLY AUTOPILOT CORE
 from .v1515_router import router as v1515_paper_autopilot_router
 app.include_router(v1515_paper_autopilot_router)
+# ===== BABY V15.16 SECURE QUICK UI ===========================================
+from .v1516_quick import router as v1516_quick_router, configure_quick_runtime
+app.include_router(v1516_quick_router)
+configure_quick_runtime(
+    proposal_getter=_alpaca_research_proposal,
+    quote_getter=lambda sym: execution_quote_service.get(sym),
+    account_getter=lambda: alpaca_broker.status(),
+    order_submitter=alpaca_broker.submit_confirmed_order,
+    ledger=v1511_ledger,
+    notifier=notifier,
+)
+# ===== END BABY V15.16 =======================================================
