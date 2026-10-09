@@ -157,18 +157,43 @@ class SubscriberStore:
                           ON CONFLICT(symbol) DO UPDATE SET last_state=excluded.last_state,last_ready=excluded.last_ready,updated_at=excluded.updated_at,last_alert_at=CASE WHEN excluded.last_alert_at IS NOT NULL THEN excluded.last_alert_at ELSE candidate_alert_state.last_alert_at END''',
                        (symbol,state,1 if ready else 0,now,now if alerted else None)); db.commit()
     def observe_candidate_state(self,symbol,state,ready):
+        # V15.15: episode hysteresis. Brief SETUP_READY flicker must not create
+        # another email / approval / forward-validation episode.
         symbol=symbol.upper(); now=iso()
+        rearm_seconds=max(60,int(os.getenv('BABY_SETUP_READY_REARM_SECONDS','300')))
         with self._db() as db:
+            cols={r[1] for r in db.execute('PRAGMA table_info(candidate_alert_state)').fetchall()}
+            if 'ready_lost_at' not in cols:
+                db.execute('ALTER TABLE candidate_alert_state ADD COLUMN ready_lost_at TEXT')
+                db.commit()
             row=db.execute('SELECT * FROM candidate_alert_state WHERE symbol=?',(symbol,)).fetchone()
             prev_ready=bool(row and row['last_ready'])
             episode=int((row['ready_episode'] if row and 'ready_episode' in row.keys() else 0) or 0)
+            lost_at=(row['ready_lost_at'] if row and 'ready_lost_at' in row.keys() else None)
+
+            new_episode=False
             if ready and not prev_ready:
-                episode+=1
+                if episode<=0:
+                    episode=1; new_episode=True
+                elif lost_at:
+                    try:
+                        dt=datetime.fromisoformat(str(lost_at).replace('Z','+00:00'))
+                        if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
+                        age=(utcnow()-dt.astimezone(timezone.utc)).total_seconds()
+                    except Exception:
+                        age=0
+                    if age>=rearm_seconds:
+                        episode+=1; new_episode=True
+                # returning to ready before rearm window resumes SAME episode
+                lost_at=None
+            elif (not ready) and prev_ready:
+                lost_at=now
+
             last_alert=row['last_alert_at'] if row else None
-            sql='INSERT INTO candidate_alert_state(symbol,last_state,last_ready,updated_at,last_alert_at,ready_episode) VALUES(?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET last_state=excluded.last_state,last_ready=excluded.last_ready,updated_at=excluded.updated_at,ready_episode=excluded.ready_episode'
-            db.execute(sql,(symbol,state,1 if ready else 0,now,last_alert,episode))
+            sql='INSERT INTO candidate_alert_state(symbol,last_state,last_ready,updated_at,last_alert_at,ready_episode,ready_lost_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(symbol) DO UPDATE SET last_state=excluded.last_state,last_ready=excluded.last_ready,updated_at=excluded.updated_at,ready_episode=excluded.ready_episode,ready_lost_at=excluded.ready_lost_at'
+            db.execute(sql,(symbol,state,1 if ready else 0,now,last_alert,episode,lost_at))
             db.commit()
-        return {'previous_ready':prev_ready,'previous_state':row['last_state'] if row else None,'ready_episode':episode}
+        return {'previous_ready':prev_ready,'previous_state':row['last_state'] if row else None,'ready_episode':episode,'new_episode':new_episode,'rearm_seconds':rearm_seconds}
 
     def mark_candidate_alerted(self,symbol):
         now=iso()

@@ -737,6 +737,31 @@ try:
 except Exception as _v1511_worker_exc:
     v1511_hot_watch_worker=None
 
+
+# ===== BABY V15.15 AUTONOMOUS ALPACA PAPER WORKER ============================
+# PAPER ONLY. 20% max allocation, 3 max entries/day, tracked-position exits.
+try:
+    from .v1515_autopilot_worker import PaperAutopilotWorker
+    _v1515_db_path = (
+        os.getenv('BABY_UI_DB')
+        or os.getenv('BABY_UI_DB_PATH')
+        or 'data/baby_ui.db'
+    )
+    v1515_autopilot_worker = PaperAutopilotWorker(
+        db_path=_v1515_db_path,
+        proposal_getter=_alpaca_research_proposal,
+        quote_getter=lambda sym: execution_quote_service.get(sym),
+        account_getter=lambda: alpaca_broker.status(),
+        order_submitter=alpaca_broker.submit_confirmed_order,
+        ledger=v1511_ledger,
+        notifier=notifier,
+        interval_seconds=int(os.getenv('BABY_PAPER_AUTOPILOT_INTERVAL_SECONDS','5')),
+    )
+    v1515_autopilot_worker.start()
+except Exception as _v1515_autopilot_exc:
+    v1515_autopilot_worker=None
+# ===== END BABY V15.15 AUTONOMOUS PAPER WORKER ===============================
+
 # ===== END BABY V15.11 ==========================================================
 
 # ===== BABY V15.12 REPORTS =====
