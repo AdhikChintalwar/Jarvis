@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json, os, sqlite3, threading, time, urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 PAPER_CONFIRMATION = "EXECUTE ALPACA PAPER"
@@ -139,14 +139,35 @@ class PaperAutopilotWorker:
             db.commit()
 
     def _candidate_rows(self):
+        # V15.15 hotfix: historical validation rows are evidence only.
+        max_age_seconds=max(
+            30,
+            int(os.getenv("BABY_PAPER_ENTRY_MAX_AGE_SECONDS","180"))
+        )
+        cutoff=(datetime.now(timezone.utc)-timedelta(seconds=max_age_seconds)).isoformat()
+
         with self._db() as db:
             rows=db.execute("""
-              SELECT * FROM v1511_forward_validation
-              WHERE alpaca_order_id IS NULL
-                AND paper_outcome IN ('NOT_EXECUTED','UNFILLED')
-              ORDER BY id ASC
+              SELECT fv.*
+              FROM v1511_forward_validation fv
+              JOIN v1511_readiness r
+                ON r.symbol=fv.symbol
+               AND r.state='SETUP_READY'
+              JOIN candidate_alert_state c
+                ON c.symbol=fv.symbol
+               AND c.last_ready=1
+               AND c.ready_episode=fv.ready_episode
+              WHERE fv.alpaca_order_id IS NULL
+                AND fv.paper_outcome IN ('NOT_EXECUTED','UNFILLED')
+                AND fv.t0 >= ?
+                AND fv.id=(
+                    SELECT MAX(x.id)
+                    FROM v1511_forward_validation x
+                    WHERE x.symbol=fv.symbol
+                )
+              ORDER BY fv.t0 ASC
               LIMIT 25
-            """).fetchall()
+            """,(cutoff,)).fetchall()
             return [dict(r) for r in rows]
 
     def _open_paper_rows(self):
@@ -188,7 +209,8 @@ class PaperAutopilotWorker:
 
         proposal=self.proposal_getter(symbol)
         if not (proposal.get("eligible") and str(proposal.get("status") or "").upper()=="ELIGIBLE"):
-            self._log(symbol,episode,"ENTRY_BLOCKED","SETUP_NO_LONGER_ELIGIBLE",proposal)
+            if not self._already_actioned(symbol,episode,"ENTRY_BLOCKED_NOT_ELIGIBLE"):
+                self._log(symbol,episode,"ENTRY_BLOCKED_NOT_ELIGIBLE","SETUP_NO_LONGER_ELIGIBLE",proposal)
             return
 
         quote=self.quote_getter(symbol)
