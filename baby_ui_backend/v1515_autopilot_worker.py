@@ -91,17 +91,30 @@ class PaperAutopilotWorker:
         except Exception:
             pass
 
-    def _notify(self,title,message,symbol=None):
-        try:self.push.send(title,message)
-        except Exception:pass
+    def _notify(self,title,message,symbol=None,episode=None):
+        # V15.16: authenticated self-hosted ntfy + signed Baby Quick link.
+        # Notification links identify a setup only; they never authorize execution.
+        try:
+            from .v1516_ntfy import secure_ntfy
+            secure_ntfy.publish(
+                title=title,
+                message=message,
+                symbol=symbol,
+                episode=episode,
+            )
+        except Exception:
+            pass
+
+        # Retain Baby's internal notification/event channel.
         try:
             if self.notifier:
                 self.notifier.emit(
-                    dedupe_key=f"v1515:{title}:{symbol}:{hash(message)}",
+                    dedupe_key=f"v1515:{title}:{symbol}:{episode}:{hash(message)}",
                     title=title,message=message,severity="IMPORTANT",
                     symbol=symbol,force=True
                 )
-        except Exception:pass
+        except Exception:
+            pass
 
     @staticmethod
     def _equity(account):
@@ -204,7 +217,23 @@ class PaperAutopilotWorker:
         if self._already_actioned(symbol,episode,"ENTRY_SUBMITTED"):
             return
         if self._trades_today()>=self.max_trades:
-            self._log(symbol,episode,"ENTRY_BLOCKED","DAILY_TRADE_LIMIT_REACHED")
+            # V15.16: research/forward-validation continues after 3 trades.
+            # Notify only once for this episode; never auto-enter it.
+            if not self._already_actioned(symbol,episode,"ENTRY_SKIPPED_DAILY_LIMIT"):
+                self._log(
+                    symbol,episode,
+                    "ENTRY_SKIPPED_DAILY_LIMIT",
+                    "DAILY_TRADE_LIMIT_REACHED"
+                )
+                self._notify(
+                    f"BABY — {symbol} SETUP_READY — daily limit reached",
+                    f"{symbol} remains SETUP_READY and will continue to be tracked, "
+                    f"but Baby has already used {self.max_trades}/{self.max_trades} "
+                    f"PAPER entries today. No PAPER BUY submitted. "
+                    f"Real-money execution DISABLED.",
+                    symbol,
+                    episode,
+                )
             return
 
         proposal=self.proposal_getter(symbol)
@@ -262,7 +291,8 @@ class PaperAutopilotWorker:
             f"BABY — {symbol} PAPER entry submitted",
             f"{qty} shares submitted to Alpaca PAPER. Episode {episode}. "
             f"Approx quote ${px:.2f}. Real-money execution DISABLED.",
-            symbol
+            symbol,
+            episode
         )
 
     def _exit_if_needed(self,row):
@@ -307,7 +337,8 @@ class PaperAutopilotWorker:
             f"BABY — {symbol} PAPER exit submitted",
             f"SELL {qty:g} shares submitted to Alpaca PAPER. Reason: {reason}. "
             f"Quote ${px:.2f}. Real-money execution DISABLED.",
-            symbol
+            symbol,
+            episode
         )
 
     def _loop(self):

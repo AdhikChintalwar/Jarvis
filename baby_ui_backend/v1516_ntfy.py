@@ -17,10 +17,21 @@ class SecureNtfy:
     def publish(self, title, message, symbol=None, episode=None, priority="high", tags="chart_with_upwards_trend"):
         if not (self.enabled and self.base and self.topic and self.token):
             return {"sent": False, "reason": "SECURE_NTFY_NOT_CONFIGURED"}
+        # urllib/http.client requires HTTP header values to be Latin-1 compatible.
+        # Keep the message body UTF-8, but normalize notification headers to ASCII.
+        def header_safe(value):
+            return (
+                str(value)
+                .replace("—", "-")
+                .replace("–", "-")
+                .encode("ascii", "replace")
+                .decode("ascii")
+            )
+
         headers = {
-            "Title": title,
-            "Priority": priority,
-            "Tags": tags,
+            "Title": header_safe(title),
+            "Priority": header_safe(priority),
+            "Tags": header_safe(tags),
             "Authorization": f"Bearer {self.token}",
         }
         if symbol and episode and self.quick_base:
