@@ -202,19 +202,69 @@ class PaperAutopilotWorker:
                          (symbol,str(episode),action)).fetchone()
             return bool(r)
 
-    def _size(self,equity,price,stop):
-        qty_alloc=int((equity*self.max_alloc)//price)
-        if qty_alloc<=0:return 0
+    def _size(self,equity,price,stop,setup_max_position_pct=None):
+        allocation_pct=self.max_alloc
+
+        try:
+            if setup_max_position_pct is not None:
+                setup_pct=float(setup_max_position_pct)/100.0
+                if setup_pct>0:
+                    allocation_pct=min(allocation_pct,setup_pct)
+        except Exception:
+            pass
+
+        qty_alloc=int((equity*allocation_pct)//price)
         qty=qty_alloc
+
         if stop and stop>0 and stop<price:
             per_share=price-stop
             qty_risk=int((equity*self.max_risk)//per_share) if per_share>0 else qty_alloc
             qty=min(qty,qty_risk)
+
         return max(0,qty)
+
+    def _has_open_symbol_position(self,symbol):
+        try:
+            with self._db() as db:
+                row=db.execute(
+                    """
+                    SELECT 1
+                    FROM v1511_forward_validation
+                    WHERE symbol=?
+                      AND filled=1
+                      AND quantity>0
+                      AND paper_outcome='OPEN'
+                    LIMIT 1
+                    """,
+                    (symbol.upper(),)
+                ).fetchone()
+                return bool(row)
+        except Exception:
+            return False
 
     def _enter_once(self,row):
         symbol=row["symbol"]; episode=int(row["ready_episode"])
         if self._already_actioned(symbol,episode,"ENTRY_SUBMITTED"):
+            return
+
+        if self._has_open_symbol_position(symbol):
+            if not self._already_actioned(symbol,episode,"ENTRY_SKIPPED_ALREADY_OPEN"):
+                self._log(
+                    symbol,
+                    episode,
+                    "ENTRY_SKIPPED_ALREADY_OPEN",
+                    "SYMBOL_ALREADY_HAS_OPEN_PAPER_POSITION",
+                )
+                self._notify(
+                    f"BABY — {symbol} setup tracked, position already open",
+                    f"{symbol} has another current SETUP_READY episode, "
+                    f"but Baby already holds an OPEN PAPER position in this symbol. "
+                    f"No additional PAPER BUY submitted. "
+                    f"The setup will continue to be tracked. "
+                    f"Real-money execution DISABLED.",
+                    symbol,
+                    episode,
+                )
             return
         if self._trades_today()>=self.max_trades:
             # V15.16: research/forward-validation continues after 3 trades.
@@ -260,7 +310,12 @@ class PaperAutopilotWorker:
             or proposal.get("stop_price")
             or row.get("invalidation")
         )
-        qty=self._size(equity,px,stop)
+        qty=self._size(
+            equity,
+            px,
+            stop,
+            proposal.get("max_position_percent"),
+        )
         if qty<=0:
             self._log(symbol,episode,"ENTRY_BLOCKED","POSITION_SIZE_ZERO",
                       {"equity":equity,"price":px,"stop":stop})

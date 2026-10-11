@@ -301,12 +301,28 @@ def _increment_trade(equity):
         db.commit()
 
 
-def _size(equity, price, stop):
+def _size(equity, price, stop, setup_max_position_pct=None):
     max_alloc = float(os.getenv("BABY_PAPER_MAX_ALLOCATION_PCT", "0.20"))
     max_risk = float(os.getenv("BABY_PAPER_MAX_PORTFOLIO_RISK_PCT", "0.01"))
-    qty = int((equity * max_alloc) // price)
+
+    allocation_pct = max_alloc
+
+    try:
+        if setup_max_position_pct is not None:
+            setup_pct = float(setup_max_position_pct) / 100.0
+            if setup_pct > 0:
+                allocation_pct = min(allocation_pct, setup_pct)
+    except Exception:
+        pass
+
+    qty = int((equity * allocation_pct) // price)
+
     if stop and 0 < stop < price:
-        qty = min(qty, int((equity * max_risk) // (price - stop)))
+        qty = min(
+            qty,
+            int((equity * max_risk) // (price - stop))
+        )
+
     return max(0, qty)
 
 
@@ -373,7 +389,12 @@ def approve_existing(symbol, episode):
     if not px or not equity:
         raise HTTPException(409, "Fresh quote/account equity unavailable.")
     stop = _f(proposal.get("invalidation") or proposal.get("stop") or row.get("invalidation"))
-    qty = _size(equity, px, stop)
+    qty = _size(
+        equity,
+        px,
+        stop,
+        proposal.get("max_position_percent"),
+    )
     if qty <= 0:
         raise HTTPException(409, "Risk sizing produced zero quantity.")
     order = runtime.order_submitter(
