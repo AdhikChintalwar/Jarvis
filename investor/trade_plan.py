@@ -237,50 +237,82 @@ class TradePlanEngine:
 
             usable_resistances = [
                 value
-                for value
-                in resistance_candidates
+                for value in resistance_candidates
                 if value > planned_entry
             ]
 
-            if usable_resistances:
+            #
+            # Volatility-aware profit targets.
+            #
+            # Structural resistance remains important, but a distant
+            # historical resistance should not automatically become T1.
+            #
+            # T1 is capped at 1.25 ATR from planned entry.
+            # T2 is capped at 2.25 ATR from planned entry.
+            #
+            atr_target_1 = (
+                planned_entry + atr * 1.25
+                if atr is not None
+                else None
+            )
 
-                target_1 = (
-                    usable_resistances[0]
-                )
+            atr_target_2 = (
+                planned_entry + atr * 2.25
+                if atr is not None
+                else None
+            )
 
-            if len(
-                usable_resistances
-            ) >= 2:
-
-                target_2 = (
-                    usable_resistances[1]
-                )
+            structural_target_1 = (
+                usable_resistances[0]
+                if usable_resistances
+                else None
+            )
 
             #
-            # When price is already at /
-            # near all-time or recent highs,
-            # use ATR extension targets.
+            # Use the nearer of volatility target and structural
+            # resistance for the first profit objective.
             #
+            t1_candidates = [
+                value
+                for value in [
+                    structural_target_1,
+                    atr_target_1,
+                ]
+                if value is not None
+                and value > planned_entry
+            ]
+
+            if t1_candidates:
+                target_1 = min(t1_candidates)
+
+            #
+            # T2 can use the next resistance, the first resistance
+            # when T1 was ATR-capped below it, or the 2.25 ATR target.
+            # It must always remain above T1.
+            #
+            t2_candidates = []
+
+            for value in usable_resistances:
+                if (
+                    value is not None
+                    and (
+                        target_1 is None
+                        or value > target_1
+                    )
+                ):
+                    t2_candidates.append(value)
 
             if (
-                target_1 is None
-                and atr is not None
-            ):
-
-                target_1 = (
-                    planned_entry
-                    + atr * 2
+                atr_target_2 is not None
+                and (
+                    target_1 is None
+                    or atr_target_2 > target_1
                 )
-
-            if (
-                target_2 is None
-                and atr is not None
             ):
+                t2_candidates.append(atr_target_2)
 
-                target_2 = (
-                    planned_entry
-                    + atr * 3
-                )
+            if t2_candidates:
+                target_2 = min(t2_candidates)
 
         #
         # Risk / reward
