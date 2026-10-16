@@ -49,13 +49,15 @@ class PaperAutopilotWorker:
     """
     def __init__(
         self, db_path, proposal_getter, quote_getter, account_getter,
-        order_submitter, ledger, notifier=None, interval_seconds=5
+        order_submitter, ledger, position_getter=None,
+        notifier=None, interval_seconds=5
     ):
         self.db_path=Path(db_path)
         self.proposal_getter=proposal_getter
         self.quote_getter=quote_getter
         self.account_getter=account_getter
         self.order_submitter=order_submitter
+        self.position_getter=position_getter
         self.ledger=ledger
         self.notifier=notifier
         self.push=NtfyPush()
@@ -350,6 +352,42 @@ class PaperAutopilotWorker:
             episode
         )
 
+    def _broker_position_qty(self, symbol):
+        """
+        Return actual Alpaca PAPER quantity held for symbol.
+
+        Fail closed:
+        - None means broker position state could not be confirmed.
+        - 0.0 means broker confirmed no long position exists.
+        """
+        if not self.position_getter:
+            return None
+
+        try:
+            positions = self.position_getter()
+        except Exception:
+            return None
+
+        if not isinstance(positions, list):
+            return None
+
+        symbol = str(symbol or "").upper()
+
+        for position in positions:
+            if not isinstance(position, dict):
+                continue
+
+            if str(position.get("symbol", "")).upper() != symbol:
+                continue
+
+            qty = _f(position.get("qty"))
+            if qty is None:
+                return None
+
+            return max(0.0, qty)
+
+        return 0.0
+
     def _exit_if_needed(self,row):
         symbol=row["symbol"]; episode=int(row["ready_episode"])
         if self._already_actioned(symbol,episode,"EXIT_SUBMITTED"):
@@ -371,10 +409,59 @@ class PaperAutopilotWorker:
 
         if not reason:return
 
-        self._log(symbol,episode,"EXIT_CLAIMED",reason,{"price":px,"qty":qty})
+        broker_qty=self._broker_position_qty(symbol)
+
+        if broker_qty is None:
+            if not self._already_actioned(
+                symbol,
+                episode,
+                "EXIT_BLOCKED_BROKER_POSITION_UNKNOWN"
+            ):
+                self._log(
+                    symbol,
+                    episode,
+                    "EXIT_BLOCKED_BROKER_POSITION_UNKNOWN",
+                    "BROKER_POSITION_LOOKUP_FAILED",
+                    {"price":px,"episode_qty":qty},
+                )
+            return
+
+        if broker_qty <= 0:
+            if not self._already_actioned(
+                symbol,
+                episode,
+                "EXIT_BLOCKED_BROKER_POSITION_ZERO"
+            ):
+                self._log(
+                    symbol,
+                    episode,
+                    "EXIT_BLOCKED_BROKER_POSITION_ZERO",
+                    "NO_BROKER_POSITION",
+                    {"price":px,"episode_qty":qty,"broker_qty":broker_qty},
+                )
+            return
+
+        sell_qty=min(qty,broker_qty)
+
+        if sell_qty <= 0:
+            return
+
+        self._log(
+            symbol,
+            episode,
+            "EXIT_CLAIMED",
+            reason,
+            {
+                "price":px,
+                "episode_qty":qty,
+                "broker_qty":broker_qty,
+                "sell_qty":sell_qty,
+            },
+        )
+
         try:
             order=self.order_submitter(
-                symbol=symbol, side="SELL", quantity=qty,
+                symbol=symbol, side="SELL", quantity=sell_qty,
                 order_type="MARKET", confirmation=PAPER_CONFIRMATION,
                 client_order_id=f"baby-v1515-exit-{symbol.lower()}-{episode}"
             )
@@ -390,7 +477,7 @@ class PaperAutopilotWorker:
         self._log(symbol,episode,"EXIT_SUBMITTED",reason,order)
         self._notify(
             f"BABY — {symbol} PAPER exit submitted",
-            f"SELL {qty:g} shares submitted to Alpaca PAPER. Reason: {reason}. "
+            f"SELL {sell_qty:g} shares submitted to Alpaca PAPER. Reason: {reason}. "
             f"Quote ${px:.2f}. Real-money execution DISABLED.",
             symbol,
             episode

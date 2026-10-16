@@ -754,6 +754,7 @@ try:
         account_getter=lambda: alpaca_broker.status(),
         order_submitter=alpaca_broker.submit_confirmed_order,
         ledger=v1511_ledger,
+        position_getter=alpaca_broker.positions,
         notifier=notifier,
         interval_seconds=int(os.getenv('BABY_PAPER_AUTOPILOT_INTERVAL_SECONDS','5')),
     )
