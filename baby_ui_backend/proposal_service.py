@@ -117,6 +117,8 @@ class PaperProposalService:
                 failures.append('TARGET_1_NOT_ABOVE_ENTRY'); trade_quality='BLOCKED'
             if t2 is None or entry is None or t2 <= entry:
                 failures.append('TARGET_2_NOT_ABOVE_ENTRY'); trade_quality='BLOCKED'
+            if t1 is not None and t2 is not None and t2 <= t1:
+                failures.append('TARGET_2_NOT_ABOVE_TARGET_1'); trade_quality='BLOCKED'
 
         execution_ok=bool(quote.get('execution_eligible'))
         execution_status='PASS' if execution_ok else 'BLOCKED'

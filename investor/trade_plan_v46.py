@@ -214,15 +214,53 @@ class TradePlanAgent:
         val=self._dict(report.get("valuation")); vs=self._num(val.get("score"))
         vctx="UNKNOWN" if vs is None else "ATTRACTIVE" if vs>=65 else "NEUTRAL" if vs>=40 else "DEMANDING"
 
-        # Pullback scenario is judged from its own planned entry. Resistances that
-        # price has already cleared are labeled pullback targets, never current upside.
+        # Pullback scenario is judged from its own planned entry.
+        #
+        # IMPORTANT:
+        # TradePlanEngine already computes the final volatility-aware T1/T2.
+        # Preserve those targets here instead of reconstructing them from raw
+        # resistance_1/resistance_2. Rebuilding them here previously bypassed
+        # the volatility-aware target logic and could even produce T2 <= T1.
         lo,hi=base.preferred_entry_low,base.preferred_entry_high
         planned=(lo+hi)/2 if lo is not None and hi is not None else None
         stop=base.stop_loss
-        pt=[x for x in (base.resistance_1,base.resistance_2) if x is not None and planned is not None and x>planned]
-        if planned is not None and atr:
-            while len(pt)<2: pt.append(planned+atr*(2+len(pt)))
-        t1=pt[0] if pt else None; t2=pt[1] if len(pt)>1 else None
+
+        t1=base.target_1
+        t2=base.target_2
+
+        # Defensive fallback for legacy/incomplete TradePlanEngine results.
+        # Structural resistances must always be ordered before assignment.
+        if planned is not None and (t1 is None or t2 is None):
+            pt=sorted(
+                x for x in (base.resistance_1,base.resistance_2)
+                if x is not None and x>planned
+            )
+
+            if atr:
+                while len(pt)<2:
+                    pt.append(planned+atr*(2+len(pt)))
+
+            if t1 is None:
+                t1=pt[0] if pt else None
+
+            if t2 is None:
+                higher=[
+                    x for x in pt
+                    if t1 is None or x>t1
+                ]
+                t2=higher[0] if higher else None
+
+        # Final long-target invariant.
+        if t1 is not None and planned is not None and t1<=planned:
+            t1=None
+
+        if t2 is not None and (
+            planned is None
+            or t2<=planned
+            or (t1 is not None and t2<=t1)
+        ):
+            t2=None
+
         rr1=self._rr(planned,stop,t1); rr2=self._rr(planned,stop,t2)
         pull_status="UNAVAILABLE" if planned is None or stop is None else "PULLBACK_RESEARCH_ONLY" if hi is not None and hi<current else "AT_PULLBACK_ZONE"
         pull=Scenario(pull_status,self._r(lo),self._r(hi),self._r(planned),None,self._r(stop),

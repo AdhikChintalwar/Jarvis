@@ -207,8 +207,40 @@ def alpaca_cancel(order_id:str):
     except Exception as e:raise HTTPException(503,str(e))
 
 def _alpaca_research_proposal(symbol:str):
-    symbol=symbol.upper(); p=REPORT_DIR/f'{symbol}.json'
-    if not p.exists(): raise HTTPException(404,'Run Baby research before requesting an Alpaca paper proposal.')
+    symbol=symbol.upper()
+
+    cache=research_orchestrator.inspect(symbol)
+
+    if cache.status != "FRESH":
+        try:
+            research_service.start(
+                symbol,
+                force=(cache.status != "MISSING"),
+            )
+        except Exception:
+            pass
+
+        return {
+            "symbol": symbol,
+            "eligible": False,
+            "status": "WAITING",
+            "reason": "RESEARCH_REFRESH_REQUIRED",
+            "failures": ["RESEARCH_NOT_FRESH"],
+            "research_cache": cache.to_dict(),
+            "real_money_execution": "DISABLED",
+        }
+
+    p=REPORT_DIR/f'{symbol}.json'
+    if not p.exists():
+        return {
+            "symbol": symbol,
+            "eligible": False,
+            "status": "WAITING",
+            "reason": "RESEARCH_ARTIFACT_MISSING",
+            "failures": ["RESEARCH_NOT_FRESH"],
+            "real_money_execution": "DISABLED",
+        }
+
     research=json.loads(p.read_text()); q=execution_quote_service.get(symbol); status=alpaca_broker.status()
     if not status.get('connected'): raise HTTPException(503,'Alpaca PAPER is not connected.')
     portfolio={'account':{'equity':status.get('equity'),'cash':status.get('cash'),'buying_power':status.get('buying_power')}}
