@@ -81,6 +81,7 @@ class PaperAutopilotWorker:
         self.entry_structure_lock_days=max(1,int(os.getenv("BABY_ENTRY_V2_STRUCTURE_LOCK_DAYS","7")))
         self._ensure_entry_engine_tables()
         self._ensure_exit_engine_tables()
+        self._ensure_exit_analytics_columns()
 
         # V15.18 Exit Engine V2
         self.exit_protect_arm_r=float(
@@ -655,6 +656,14 @@ class PaperAutopilotWorker:
         }
 
         t1_filled=_f(st.get("t1_filled_qty")) or 0.0
+        t1_fill_price=_f(st.get("t1_fill_price"))
+        t1_filled_at=st.get("t1_filled_at")
+
+        final_filled=_f(st.get("final_filled_qty")) or 0.0
+        final_fill_price=_f(st.get("final_fill_price"))
+        final_filled_at=st.get("final_filled_at")
+        broker_closed_at=st.get("broker_closed_at")
+
         state=str(st.get("state") or "TRACKING")
         last_error=None
 
@@ -666,6 +675,17 @@ class PaperAutopilotWorker:
                 filled=_f(o.get("filled_qty"))
                 if filled is not None:
                     t1_filled=max(t1_filled,filled)
+
+                px=_f(
+                    o.get("filled_avg_price")
+                    or o.get("average_fill_price")
+                )
+
+                if px is not None:
+                    t1_fill_price=px
+
+                if o.get("filled_at"):
+                    t1_filled_at=o.get("filled_at")
 
                 status=str(o.get("status") or "").upper()
 
@@ -687,10 +707,33 @@ class PaperAutopilotWorker:
             o=byid.get(final_id)
 
             if o:
+                filled=_f(o.get("filled_qty"))
+
+                if filled is not None:
+                    final_filled=max(
+                        final_filled,
+                        filled,
+                    )
+
+                px=_f(
+                    o.get("filled_avg_price")
+                    or o.get("average_fill_price")
+                )
+
+                if px is not None:
+                    final_fill_price=px
+
+                if o.get("filled_at"):
+                    final_filled_at=o.get("filled_at")
+
                 status=str(o.get("status") or "").upper()
 
                 if status=="FILLED":
                     state="CLOSED"
+                    broker_closed_at=(
+                        o.get("filled_at")
+                        or _now()
+                    )
                 elif status=="PARTIALLY_FILLED":
                     state="FINAL_EXIT_FILLING"
                 elif status in {
@@ -706,6 +749,12 @@ class PaperAutopilotWorker:
             db.execute("""
                 UPDATE v1518_exit_state
                 SET t1_filled_qty=?,
+                    t1_fill_price=?,
+                    t1_filled_at=?,
+                    final_filled_qty=?,
+                    final_fill_price=?,
+                    final_filled_at=?,
+                    broker_closed_at=?,
                     remaining_quantity=?,
                     last_broker_qty=?,
                     state=?,
@@ -714,6 +763,12 @@ class PaperAutopilotWorker:
                 WHERE symbol=? AND ready_episode=?
             """,(
                 t1_filled,
+                t1_fill_price,
+                t1_filled_at,
+                final_filled,
+                final_fill_price,
+                final_filled_at,
+                broker_closed_at,
                 broker_qty,
                 broker_qty,
                 state,
@@ -726,6 +781,40 @@ class PaperAutopilotWorker:
             db.commit()
 
         return self._exit_state(symbol,episode)
+
+    def _ensure_exit_analytics_columns(self):
+        """
+        V15.19 additive migration.
+
+        These fields record actual Alpaca PAPER SELL fills.
+        They are intentionally separate from paper_outcome,
+        which remains a price-path observation.
+        """
+        wanted={
+            "t1_fill_price":"REAL",
+            "t1_filled_at":"TEXT",
+            "final_filled_qty":"REAL NOT NULL DEFAULT 0.0",
+            "final_fill_price":"REAL",
+            "final_filled_at":"TEXT",
+            "broker_closed_at":"TEXT",
+        }
+
+        with sqlite3.connect(self.db_path) as db:
+            cols={
+                r[1]
+                for r in db.execute(
+                    "PRAGMA table_info(v1518_exit_state)"
+                ).fetchall()
+            }
+
+            for name,sql_type in wanted.items():
+                if name not in cols:
+                    db.execute(
+                        f"ALTER TABLE v1518_exit_state "
+                        f"ADD COLUMN {name} {sql_type}"
+                    )
+
+            db.commit()
 
     def _db(self):
         db=sqlite3.connect(self.db_path)

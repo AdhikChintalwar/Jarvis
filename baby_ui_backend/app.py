@@ -829,3 +829,41 @@ configure_quick_runtime(
     notifier=notifier,
 )
 # ===== END BABY V15.16 =======================================================
+
+# ==========================================================
+# V15.19 Strategy Analytics / broker reconciliation
+# ==========================================================
+try:
+    from .v1519_strategy_analytics import (
+        router as v1519_strategy_analytics_router,
+        configure_v1519_runtime,
+    )
+
+    app.include_router(
+        v1519_strategy_analytics_router
+    )
+
+    configure_v1519_runtime(
+        position_getter=alpaca_broker.positions,
+    )
+except Exception as _v1519_exc:
+    print(
+        "V15.19 analytics disabled:",
+        _v1519_exc,
+    )
+
+
+# Quick broker-state hardening.
+# Dynamic assignment preserves the existing V15.16
+# configure_quick_runtime API.
+try:
+    from . import v1516_quick as _v1516_quick_module
+
+    _v1516_quick_module.runtime.position_getter = (
+        alpaca_broker.positions
+    )
+except Exception as _quick_position_exc:
+    print(
+        "Quick broker-state integration disabled:",
+        _quick_position_exc,
+    )

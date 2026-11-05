@@ -370,6 +370,67 @@ def _pending(symbol, episode):
         return dict(row) if row else None
 
 
+def _broker_position_qty(symbol):
+    getter=getattr(
+        runtime,
+        "position_getter",
+        None,
+    )
+
+    if not getter:
+        return None
+
+    try:
+        rows=getter() or []
+    except Exception:
+        return None
+
+    symbol=symbol.upper()
+
+    for p in rows:
+        if not isinstance(p,dict):
+            continue
+
+        if str(
+            p.get("symbol")
+            or ""
+        ).upper()!=symbol:
+            continue
+
+        qty=_f(p.get("qty"))
+
+        if qty is None:
+            return None
+
+        return max(0.0,qty)
+
+    return 0.0
+
+
+def _live_symbol_episodes(symbol):
+    with store.db() as db:
+        return [
+            dict(r)
+            for r in db.execute(
+                """
+                SELECT
+                    symbol,
+                    ready_episode,
+                    quantity,
+                    paper_outcome
+                FROM v1511_forward_validation
+                WHERE symbol=?
+                  AND filled=1
+                  AND quantity>0
+                  AND paper_outcome
+                      IN ('OPEN','T1_HIT')
+                ORDER BY id
+                """,
+                (symbol.upper(),),
+            ).fetchall()
+        ]
+
+
 def approve_existing(symbol, episode):
     max_trades = int(os.getenv("BABY_PAPER_MAX_NEW_TRADES_PER_DAY", "3"))
     if _trade_count() >= max_trades:
@@ -377,6 +438,22 @@ def approve_existing(symbol, episode):
     row = _pending(symbol, episode)
     if not row:
         raise HTTPException(409, "Setup is no longer a current pending SETUP_READY episode.")
+
+    broker_qty=_broker_position_qty(symbol)
+
+    if broker_qty is None:
+        raise HTTPException(
+            503,
+            "Broker position state unavailable; "
+            "Quick approval fails closed."
+        )
+
+    if broker_qty>0:
+        raise HTTPException(
+            409,
+            "A PAPER broker position already exists "
+            "for this symbol."
+        )
     if not all([runtime.proposal_getter, runtime.quote_getter, runtime.account_getter, runtime.order_submitter, runtime.ledger]):
         raise HTTPException(503, "Quick execution runtime is not configured.")
     proposal = runtime.proposal_getter(symbol)
@@ -416,26 +493,155 @@ def approve_existing(symbol, episode):
 
 
 def close_existing(symbol, episode):
+    symbol=symbol.upper()
+    episode=int(episode)
+
     with store.db() as db:
-        row = db.execute(
-            "SELECT * FROM v1511_forward_validation WHERE symbol=? AND ready_episode=? AND filled=1 AND quantity>0 AND paper_outcome='OPEN' LIMIT 1",
-            (symbol.upper(), int(episode)),
+        row=db.execute(
+            """
+            SELECT *
+            FROM v1511_forward_validation
+            WHERE symbol=?
+              AND ready_episode=?
+              AND filled=1
+              AND quantity>0
+              AND paper_outcome
+                    IN ('OPEN','T1_HIT')
+            LIMIT 1
+            """,
+            (symbol,episode),
         ).fetchone()
+
     if not row:
-        raise HTTPException(409, "No open tracked PAPER position for this episode.")
-    row = dict(row)
-    order = runtime.order_submitter(
-        symbol=symbol.upper(), side="SELL", quantity=float(row["quantity"]), order_type="MARKET",
-        confirmation="EXECUTE ALPACA PAPER",
-        client_order_id=f"baby-quick-close-{symbol.lower()}-{int(episode)}",
+        raise HTTPException(
+            409,
+            "No currently managed PAPER position "
+            "for this episode."
+        )
+
+    row=dict(row)
+
+    live=_live_symbol_episodes(symbol)
+
+    if len(live)!=1:
+        raise HTTPException(
+            409,
+            "Multiple live Baby episodes claim this "
+            "symbol; manual reconciliation required."
+        )
+
+    owner=int(
+        live[0].get("ready_episode")
+        or 0
     )
-    order_id = order.get("id") or order.get("order_id")
+
+    if owner!=episode:
+        raise HTTPException(
+            409,
+            "Requested episode is not the unique "
+            "Baby owner of this symbol."
+        )
+
+    broker_qty=_broker_position_qty(symbol)
+
+    if broker_qty is None:
+        raise HTTPException(
+            503,
+            "Broker position state unavailable; "
+            "Quick close fails closed."
+        )
+
+    if broker_qty<=0:
+        raise HTTPException(
+            409,
+            "Alpaca PAPER reports no remaining "
+            "position for this symbol."
+        )
+
+    tracked=_f(row.get("quantity"))
+
+    if tracked is None or tracked<=0:
+        raise HTTPException(
+            409,
+            "Tracked quantity unavailable."
+        )
+
+    # Broker position is authoritative after partial exits.
+    qty=min(
+        float(tracked),
+        float(broker_qty),
+    )
+
+    if qty<=0:
+        raise HTTPException(
+            409,
+            "No broker quantity available to close."
+        )
+
+    order=runtime.order_submitter(
+        symbol=symbol,
+        side="SELL",
+        quantity=qty,
+        order_type="MARKET",
+        confirmation="EXECUTE ALPACA PAPER",
+        client_order_id=(
+            f"baby-quick-close-"
+            f"{symbol.lower()}-{episode}"
+        ),
+    )
+
+    order_id=(
+        order.get("id")
+        or order.get("order_id")
+    )
+
     if not order_id:
-        raise HTTPException(503, "Broker response missing order id.")
-    store.audit("CLOSE", "SUBMITTED", symbol, episode, {"order_id": order_id, "qty": row["quantity"]})
+        store.audit(
+            "CLOSE",
+            "UNKNOWN",
+            symbol,
+            episode,
+            {
+                "qty":qty,
+                "broker_qty":
+                    broker_qty,
+                "response":
+                    order,
+            },
+        )
+
+        raise HTTPException(
+            503,
+            "Broker response missing order id; "
+            "manual reconciliation required."
+        )
+
+    store.audit(
+        "CLOSE",
+        "SUBMITTED",
+        symbol,
+        episode,
+        {
+            "order_id":order_id,
+            "qty":qty,
+            "broker_qty":
+                broker_qty,
+        },
+    )
+
     return {
-        "status": "SUBMITTED", "side": "SELL", "symbol": symbol.upper(), "quantity": row["quantity"],
-        "environment": "ALPACA_PAPER", "real_money_execution": "DISABLED",
+        "status":"SUBMITTED",
+        "side":"SELL",
+        "symbol":symbol,
+        "quantity":qty,
+        "broker_quantity":
+            broker_qty,
+        "order_id":
+            order_id,
+        "environment":
+            "ALPACA_PAPER",
+        "real_money_execution":
+            "DISABLED",
     }
 
 
