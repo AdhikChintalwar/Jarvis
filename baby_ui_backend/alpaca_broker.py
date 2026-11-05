@@ -183,6 +183,8 @@ class AlpacaPaperBroker:
             "filled_avg_price": self._f(getattr(o, "filled_avg_price", None)),
             "status": str(self._enum(getattr(o, "status", "UNKNOWN"))).upper(),
             "submitted_at": str(getattr(o, "submitted_at", "") or ""),
+            "filled_at": str(getattr(o, "filled_at", "") or ""),
+            "updated_at": str(getattr(o, "updated_at", "") or ""),
             "environment": "PAPER",
             "real_money": False,
         }

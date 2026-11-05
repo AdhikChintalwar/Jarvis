@@ -50,6 +50,7 @@ class PaperAutopilotWorker:
     def __init__(
         self, db_path, proposal_getter, quote_getter, account_getter,
         order_submitter, ledger, position_getter=None,
+        order_getter=None,
         research_getter=None,
         notifier=None, interval_seconds=5
     ):
@@ -59,6 +60,7 @@ class PaperAutopilotWorker:
         self.account_getter=account_getter
         self.order_submitter=order_submitter
         self.position_getter=position_getter
+        self.order_getter=order_getter
         self.research_getter=research_getter
         self.ledger=ledger
         self.notifier=notifier
@@ -78,6 +80,28 @@ class PaperAutopilotWorker:
         self.entry_min_rebound_r=float(os.getenv("BABY_ENTRY_V2_MIN_REBOUND_R","0.12"))
         self.entry_structure_lock_days=max(1,int(os.getenv("BABY_ENTRY_V2_STRUCTURE_LOCK_DAYS","7")))
         self._ensure_entry_engine_tables()
+        self._ensure_exit_engine_tables()
+
+        # V15.18 Exit Engine V2
+        self.exit_protect_arm_r=float(
+            os.getenv("BABY_EXIT_V2_PROTECT_ARM_R","0.75")
+        )
+        self.exit_protect_r=float(
+            os.getenv("BABY_EXIT_V2_PROTECT_R","1.00")
+        )
+        self.exit_protected_stop_r=float(
+            os.getenv("BABY_EXIT_V2_PROTECTED_STOP_R","-0.05")
+        )
+        self.exit_post_t1_stop_r=float(
+            os.getenv("BABY_EXIT_V2_POST_T1_STOP_R","0.10")
+        )
+        self.exit_t1_fraction=max(
+            0.05,
+            min(
+                1.0,
+                float(os.getenv("BABY_EXIT_V2_T1_FRACTION","0.50"))
+            )
+        )
 
     def _ensure_entry_engine_tables(self):
         with sqlite3.connect(self.db_path) as db:
@@ -458,6 +482,251 @@ class PaperAutopilotWorker:
             "diagnostics":diagnostics,
         }
 
+    def _ensure_exit_engine_tables(self):
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS v1518_exit_state(
+                    symbol TEXT NOT NULL,
+                    ready_episode INTEGER NOT NULL,
+                    strategy_version TEXT NOT NULL DEFAULT 'EXIT_V2',
+
+                    original_quantity REAL,
+                    remaining_quantity REAL,
+
+                    initial_stop REAL,
+                    protected_stop REAL,
+
+                    highest_r REAL NOT NULL DEFAULT 0.0,
+
+                    t1_order_id TEXT,
+                    t1_requested_qty REAL,
+                    t1_filled_qty REAL NOT NULL DEFAULT 0.0,
+
+                    final_order_id TEXT,
+                    final_reason TEXT,
+
+                    state TEXT NOT NULL DEFAULT 'TRACKING',
+                    last_broker_qty REAL,
+                    last_error TEXT,
+
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+
+                    PRIMARY KEY(symbol,ready_episode)
+                )
+            """)
+
+            db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_v1518_exit_state
+                ON v1518_exit_state(state,updated_at)
+            """)
+
+            db.commit()
+
+    def _exit_state(self,symbol,episode):
+        with self._db() as db:
+            row=db.execute("""
+                SELECT *
+                FROM v1518_exit_state
+                WHERE symbol=? AND ready_episode=?
+            """,(symbol.upper(),int(episode))).fetchone()
+
+        return dict(row) if row else None
+
+    def _ensure_exit_state(self,row,broker_qty=None):
+        symbol=str(row.get("symbol") or "").upper()
+        episode=int(row.get("ready_episode") or 0)
+
+        existing=self._exit_state(symbol,episode)
+        if existing:
+            return existing
+
+        tracked_qty=_f(row.get("quantity"))
+        original_qty=tracked_qty
+
+        remaining_qty=(
+            broker_qty
+            if broker_qty is not None
+            else tracked_qty
+        )
+
+        initial_stop=_f(row.get("invalidation"))
+        now=_now()
+
+        with self._db() as db:
+            db.execute("""
+                INSERT OR IGNORE INTO v1518_exit_state(
+                    symbol,
+                    ready_episode,
+                    strategy_version,
+                    original_quantity,
+                    remaining_quantity,
+                    initial_stop,
+                    protected_stop,
+                    highest_r,
+                    state,
+                    last_broker_qty,
+                    created_at,
+                    updated_at
+                )
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+            """,(
+                symbol,
+                episode,
+                "EXIT_V2",
+                original_qty,
+                remaining_qty,
+                initial_stop,
+                None,
+                0.0,
+                "TRACKING",
+                broker_qty,
+                now,
+                now,
+            ))
+
+            db.commit()
+
+        return self._exit_state(symbol,episode)
+
+    def _broker_orders(self):
+        if not self.order_getter:
+            return None
+
+        try:
+            rows=self.order_getter(200) or []
+        except TypeError:
+            try:
+                rows=self.order_getter() or []
+            except Exception:
+                return None
+        except Exception:
+            return None
+
+        if not isinstance(rows,list):
+            return None
+
+        return [
+            r for r in rows
+            if isinstance(r,dict)
+        ]
+
+    def _reconcile_exit_state(self,row,broker_qty=None):
+        """
+        Reconcile V15.18 exit orders from Alpaca PAPER.
+
+        Important:
+        - Never infer an exit fill from submission alone.
+        - Never overwrite the original entry alpaca_order_id.
+        - Unknown broker/order state fails closed.
+        """
+        symbol=str(row.get("symbol") or "").upper()
+        episode=int(row.get("ready_episode") or 0)
+
+        st=self._ensure_exit_state(row,broker_qty)
+        if not st:
+            return None
+
+        orders=self._broker_orders()
+
+        if orders is None:
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET last_error=?,
+                        last_broker_qty=?,
+                        updated_at=?
+                    WHERE symbol=? AND ready_episode=?
+                """,(
+                    "BROKER_ORDER_STATE_UNKNOWN",
+                    broker_qty,
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+            return self._exit_state(symbol,episode)
+
+        byid={
+            str(o.get("id")):o
+            for o in orders
+            if o.get("id")
+        }
+
+        t1_filled=_f(st.get("t1_filled_qty")) or 0.0
+        state=str(st.get("state") or "TRACKING")
+        last_error=None
+
+        t1_id=str(st.get("t1_order_id") or "")
+        if t1_id:
+            o=byid.get(t1_id)
+
+            if o:
+                filled=_f(o.get("filled_qty"))
+                if filled is not None:
+                    t1_filled=max(t1_filled,filled)
+
+                status=str(o.get("status") or "").upper()
+
+                if status=="FILLED":
+                    state="T1_PARTIAL_FILLED"
+                elif status=="PARTIALLY_FILLED":
+                    state="T1_PARTIAL_FILLING"
+                elif status in {
+                    "CANCELED",
+                    "CANCELLED",
+                    "EXPIRED",
+                    "REJECTED",
+                }:
+                    state="T1_PARTIAL_FAILED"
+                    last_error=f"T1_ORDER_{status}"
+
+        final_id=str(st.get("final_order_id") or "")
+        if final_id:
+            o=byid.get(final_id)
+
+            if o:
+                status=str(o.get("status") or "").upper()
+
+                if status=="FILLED":
+                    state="CLOSED"
+                elif status=="PARTIALLY_FILLED":
+                    state="FINAL_EXIT_FILLING"
+                elif status in {
+                    "CANCELED",
+                    "CANCELLED",
+                    "EXPIRED",
+                    "REJECTED",
+                }:
+                    state="FINAL_EXIT_FAILED"
+                    last_error=f"FINAL_ORDER_{status}"
+
+        with self._db() as db:
+            db.execute("""
+                UPDATE v1518_exit_state
+                SET t1_filled_qty=?,
+                    remaining_quantity=?,
+                    last_broker_qty=?,
+                    state=?,
+                    last_error=?,
+                    updated_at=?
+                WHERE symbol=? AND ready_episode=?
+            """,(
+                t1_filled,
+                broker_qty,
+                broker_qty,
+                state,
+                last_error,
+                _now(),
+                symbol,
+                episode,
+            ))
+
+            db.commit()
+
+        return self._exit_state(symbol,episode)
+
     def _db(self):
         db=sqlite3.connect(self.db_path)
         db.row_factory=sqlite3.Row
@@ -575,15 +844,35 @@ class PaperAutopilotWorker:
             return [dict(r) for r in rows]
 
     def _open_paper_rows(self):
+        """
+        Broker-management candidates.
+
+        V15.18 intentionally does NOT filter by paper_outcome.
+
+        paper_outcome describes the observed price path, not whether Alpaca
+        still holds shares.
+
+        Only ENTRY_V2-confirmed episodes are autonomously managed so legacy
+        PAPER holdings cannot suddenly be sold by the new exit engine.
+        """
         with self._db() as db:
             rows=db.execute("""
-              SELECT * FROM v1511_forward_validation
-              WHERE filled=1
-                AND quantity IS NOT NULL
-                AND quantity>0
-                AND paper_outcome='OPEN'
-              ORDER BY id ASC
+                SELECT fv.*
+                FROM v1511_forward_validation fv
+                WHERE fv.filled=1
+                  AND fv.quantity IS NOT NULL
+                  AND fv.quantity>0
+                  AND EXISTS(
+                      SELECT 1
+                      FROM v1517_entry_confirmation ec
+                      WHERE ec.symbol=fv.symbol
+                        AND ec.ready_episode=fv.ready_episode
+                        AND ec.strategy_version='ENTRY_V2'
+                        AND ec.state='CONFIRMED'
+                  )
+                ORDER BY fv.id ASC
             """).fetchall()
+
             return [dict(r) for r in rows]
 
     def _already_actioned(self,symbol,episode,action):
@@ -796,6 +1085,137 @@ class PaperAutopilotWorker:
             episode
         )
 
+    def _exit_reconciliation_guard(self,row,broker_qty):
+        """
+        Exit V2 ownership guard.
+
+        Autonomous SELL is permitted only when:
+        - broker position state is known
+        - exactly one live Baby PAPER episode claims the symbol
+        - this row is that episode
+        - tracked quantity matches broker quantity
+
+        Everything ambiguous fails closed.
+        """
+        symbol=str(row.get("symbol") or "").upper()
+        episode=int(row.get("ready_episode") or 0)
+
+        if broker_qty is None:
+            return {
+                "eligible":False,
+                "reason":"BROKER_POSITION_UNKNOWN",
+            }
+
+        try:
+            with self._db() as db:
+                rows=db.execute("""
+                    SELECT
+                        ready_episode,
+                        quantity,
+                        paper_outcome
+                    FROM v1511_forward_validation fv
+                    WHERE fv.symbol=?
+                      AND fv.filled=1
+                      AND fv.quantity>0
+                      AND EXISTS(
+                          SELECT 1
+                          FROM v1517_entry_confirmation ec
+                          WHERE ec.symbol=fv.symbol
+                            AND ec.ready_episode=fv.ready_episode
+                            AND ec.strategy_version='ENTRY_V2'
+                            AND ec.state='CONFIRMED'
+                      )
+                    ORDER BY fv.id
+                """,(symbol,)).fetchall()
+        except Exception as exc:
+            return {
+                "eligible":False,
+                "reason":"LEDGER_OWNERSHIP_LOOKUP_FAILED",
+                "error":str(exc),
+            }
+
+        rows=[dict(r) for r in rows]
+
+        if not rows:
+            return {
+                "eligible":False,
+                "reason":"BROKER_POSITION_LEDGER_CLOSED"
+                if broker_qty>0
+                else "NO_LIVE_TRACKED_EPISODE",
+                "broker_qty":broker_qty,
+            }
+
+        if len(rows)!=1:
+            return {
+                "eligible":False,
+                "reason":"MULTIPLE_LIVE_EPISODES",
+                "episodes":[r.get("ready_episode") for r in rows],
+                "tracked_total":sum(float(r.get("quantity") or 0) for r in rows),
+                "broker_qty":broker_qty,
+            }
+
+        owner=rows[0]
+
+        if int(owner.get("ready_episode") or 0)!=episode:
+            return {
+                "eligible":False,
+                "reason":"EPISODE_NOT_UNIQUE_OWNER",
+                "owner_episode":owner.get("ready_episode"),
+                "broker_qty":broker_qty,
+            }
+
+        tracked_qty=_f(owner.get("quantity"))
+
+        if tracked_qty is None:
+            return {
+                "eligible":False,
+                "reason":"TRACKED_QUANTITY_UNKNOWN",
+            }
+
+        # Before Exit V2 has managed the trade, the forward-validation
+        # quantity is the expected broker quantity.
+        #
+        # After a partial exit has actually been reconciled, the broker
+        # quantity will legitimately be smaller. In that case the persisted
+        # Exit V2 remaining_quantity becomes the expected quantity.
+        exit_state=self._exit_state(symbol,episode)
+
+        expected_qty=tracked_qty
+        quantity_source="FORWARD_VALIDATION"
+
+        if exit_state:
+            remaining=_f(exit_state.get("remaining_quantity"))
+            t1_filled=_f(exit_state.get("t1_filled_qty")) or 0.0
+
+            if remaining is not None and t1_filled>0:
+                expected_qty=remaining
+                quantity_source="EXIT_V2_REMAINING"
+
+        tolerance=max(
+            0.0001,
+            abs(expected_qty)*0.001,
+        )
+
+        if abs(float(broker_qty)-expected_qty)>tolerance:
+            return {
+                "eligible":False,
+                "reason":"BROKER_LEDGER_QUANTITY_MISMATCH",
+                "tracked_qty":tracked_qty,
+                "expected_qty":expected_qty,
+                "quantity_source":quantity_source,
+                "broker_qty":broker_qty,
+            }
+
+        return {
+            "eligible":True,
+            "reason":"UNIQUE_EPISODE_BROKER_MATCH",
+            "episode":episode,
+            "tracked_qty":tracked_qty,
+            "expected_qty":expected_qty,
+            "quantity_source":quantity_source,
+            "broker_qty":broker_qty,
+        }
+
     def _broker_position_qty(self, symbol):
         """
         Return actual Alpaca PAPER quantity held for symbol.
@@ -832,26 +1252,330 @@ class PaperAutopilotWorker:
 
         return 0.0
 
+    def _submit_exit_v2(self,row,qty,reason,kind):
+        """
+        Submit one idempotent Alpaca PAPER SELL.
+
+        kind:
+          T1    -> partial profit
+          FINAL -> T2 / protected stop / original stop
+
+        Claim is persisted BEFORE broker submission.
+
+        If broker submission becomes unknown, Baby fails closed and will not
+        automatically retry that exit because duplicate SELLs are worse than
+        delayed manual reconciliation.
+        """
+        symbol=str(row.get("symbol") or "").upper()
+        episode=int(row.get("ready_episode") or 0)
+
+        qty=_f(qty)
+        if qty is None or qty<=0:
+            return {
+                "submitted":False,
+                "reason":"INVALID_EXIT_QUANTITY",
+            }
+
+        st=self._exit_state(symbol,episode)
+        if not st:
+            return {
+                "submitted":False,
+                "reason":"EXIT_STATE_MISSING",
+            }
+
+        if kind=="T1":
+            if st.get("t1_order_id"):
+                return {
+                    "submitted":False,
+                    "reason":"T1_ORDER_ALREADY_EXISTS",
+                }
+
+            if str(st.get("state") or "") in {
+                "T1_PARTIAL_CLAIMED",
+                "T1_PARTIAL_SUBMIT_UNKNOWN",
+                "T1_PARTIAL_SUBMITTED",
+                "T1_PARTIAL_FILLING",
+            }:
+                return {
+                    "submitted":False,
+                    "reason":"T1_ORDER_ALREADY_CLAIMED",
+                }
+
+            claim_state="T1_PARTIAL_CLAIMED"
+            client_order_id=(
+                f"baby-v1518-t1-{symbol.lower()}-{episode}"
+            )
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET state=?,
+                        t1_requested_qty=?,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    claim_state,
+                    qty,
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+        else:
+            if st.get("final_order_id"):
+                return {
+                    "submitted":False,
+                    "reason":"FINAL_ORDER_ALREADY_EXISTS",
+                }
+
+            if str(st.get("state") or "") in {
+                "FINAL_EXIT_CLAIMED",
+                "FINAL_EXIT_SUBMIT_UNKNOWN",
+                "FINAL_EXIT_SUBMITTED",
+                "FINAL_EXIT_FILLING",
+            }:
+                return {
+                    "submitted":False,
+                    "reason":"FINAL_ORDER_ALREADY_CLAIMED",
+                }
+
+            claim_state="FINAL_EXIT_CLAIMED"
+
+            safe_reason=(
+                str(reason or "exit")
+                .lower()
+                .replace("_","-")
+            )
+
+            client_order_id=(
+                f"baby-v1518-{safe_reason}-"
+                f"{symbol.lower()}-{episode}"
+            )[:48]
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET state=?,
+                        final_reason=?,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    claim_state,
+                    reason,
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+        self._log(
+            symbol,
+            episode,
+            f"EXIT_V2_{kind}_CLAIMED",
+            reason,
+            {
+                "quantity":qty,
+                "client_order_id":client_order_id,
+            },
+        )
+
+        try:
+            order=self.order_submitter(
+                symbol=symbol,
+                side="SELL",
+                quantity=qty,
+                order_type="MARKET",
+                confirmation=PAPER_CONFIRMATION,
+                client_order_id=client_order_id,
+            )
+        except Exception as exc:
+            unknown_state=(
+                "T1_PARTIAL_SUBMIT_UNKNOWN"
+                if kind=="T1"
+                else "FINAL_EXIT_SUBMIT_UNKNOWN"
+            )
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET state=?,
+                        last_error=?,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    unknown_state,
+                    str(exc),
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+            self._log(
+                symbol,
+                episode,
+                f"EXIT_V2_{kind}_SUBMIT_UNKNOWN",
+                "BROKER_EXCEPTION",
+                {"error":str(exc)},
+            )
+
+            return {
+                "submitted":False,
+                "reason":"BROKER_SUBMIT_UNKNOWN",
+            }
+
+        oid=order.get("id") or order.get("order_id")
+
+        if not oid:
+            unknown_state=(
+                "T1_PARTIAL_SUBMIT_UNKNOWN"
+                if kind=="T1"
+                else "FINAL_EXIT_SUBMIT_UNKNOWN"
+            )
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET state=?,
+                        last_error=?,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    unknown_state,
+                    "BROKER_NO_ORDER_ID",
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+            return {
+                "submitted":False,
+                "reason":"BROKER_NO_ORDER_ID",
+            }
+
+        if kind=="T1":
+            state="T1_PARTIAL_SUBMITTED"
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET t1_order_id=?,
+                        state=?,
+                        last_error=NULL,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    str(oid),
+                    state,
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+        else:
+            state="FINAL_EXIT_SUBMITTED"
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET final_order_id=?,
+                        final_reason=?,
+                        state=?,
+                        last_error=NULL,
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    str(oid),
+                    reason,
+                    state,
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+        self._log(
+            symbol,
+            episode,
+            f"EXIT_V2_{kind}_SUBMITTED",
+            reason,
+            order,
+        )
+
+        self._notify(
+            f"BABY — {symbol} PAPER exit submitted",
+            f"SELL {qty:g} shares submitted to Alpaca PAPER. "
+            f"Reason: {reason}. "
+            f"Real-money execution DISABLED.",
+            symbol,
+            episode,
+        )
+
+        return {
+            "submitted":True,
+            "order":order,
+        }
+
+
     def _exit_if_needed(self,row):
-        symbol=row["symbol"]; episode=int(row["ready_episode"])
-        if self._already_actioned(symbol,episode,"EXIT_SUBMITTED"):
-            return
+        """
+        V15.18 PAPER Exit Engine V2.
+
+        Broker position is the source of truth.
+
+        Management:
+          < +0.75R  -> original stop
+          >=+0.75R  -> protection armed
+          >=+1.00R  -> protected stop near breakeven
+          T1        -> partial profit
+          after T1  -> protect remainder at +0.10R by default
+          T2        -> exit remainder
+
+        PAPER ONLY.
+        """
+        symbol=str(row.get("symbol") or "").upper()
+        episode=int(row.get("ready_episode") or 0)
+
         q=self.quote_getter(symbol)
         px=self._price(q)
-        if not px:return
 
-        stop=_f(row.get("invalidation"))
+        if not px:
+            return
+
         fill=_f(row.get("fill_price") or row.get("entry"))
-        qty=_f(row.get("quantity"))
-        if not qty or qty<=0:return
+        stop=_f(row.get("invalidation"))
+        t1=_f(row.get("target1"))
+        t2=_f(row.get("target2"))
 
-        reason=None
-        if stop and px<=stop:
-            reason="STOP_OR_INVALIDATION"
-        elif fill and px<=fill*0.95:
-            reason="EMERGENCY_5PCT_DROP_FROM_FILL"
+        if (
+            fill is None
+            or stop is None
+            or fill<=0
+            or stop<=0
+            or fill<=stop
+        ):
+            self._log(
+                symbol,
+                episode,
+                "EXIT_V2_BLOCKED",
+                "INVALID_INITIAL_RISK_STRUCTURE",
+                {
+                    "fill":fill,
+                    "stop":stop,
+                },
+            )
+            return
 
-        if not reason:return
+        risk=fill-stop
 
         broker_qty=self._broker_position_qty(symbol)
 
@@ -859,73 +1583,271 @@ class PaperAutopilotWorker:
             if not self._already_actioned(
                 symbol,
                 episode,
-                "EXIT_BLOCKED_BROKER_POSITION_UNKNOWN"
+                "EXIT_V2_BROKER_POSITION_UNKNOWN",
             ):
                 self._log(
                     symbol,
                     episode,
-                    "EXIT_BLOCKED_BROKER_POSITION_UNKNOWN",
+                    "EXIT_V2_BROKER_POSITION_UNKNOWN",
                     "BROKER_POSITION_LOOKUP_FAILED",
-                    {"price":px,"episode_qty":qty},
                 )
             return
 
-        if broker_qty <= 0:
+        # Broker confirms position is already gone.
+        # Do not submit another SELL.
+        if broker_qty<=0:
+            self._ensure_exit_state(row,broker_qty=0)
+
+            with self._db() as db:
+                db.execute("""
+                    UPDATE v1518_exit_state
+                    SET remaining_quantity=0,
+                        last_broker_qty=0,
+                        state='CLOSED_BROKER_ZERO',
+                        updated_at=?
+                    WHERE symbol=?
+                      AND ready_episode=?
+                """,(
+                    _now(),
+                    symbol,
+                    episode,
+                ))
+                db.commit()
+
+            return
+
+        ownership=self._exit_reconciliation_guard(
+            row,
+            broker_qty,
+        )
+
+        if not ownership.get("eligible"):
+            action=(
+                "EXIT_V2_RECONCILIATION_BLOCKED_"
+                + str(
+                    ownership.get("reason")
+                    or "UNKNOWN"
+                )
+            )
+
             if not self._already_actioned(
                 symbol,
                 episode,
-                "EXIT_BLOCKED_BROKER_POSITION_ZERO"
+                action,
             ):
                 self._log(
                     symbol,
                     episode,
-                    "EXIT_BLOCKED_BROKER_POSITION_ZERO",
-                    "NO_BROKER_POSITION",
-                    {"price":px,"episode_qty":qty,"broker_qty":broker_qty},
+                    action,
+                    ownership.get("reason")
+                    or "EXIT_RECONCILIATION_REQUIRED",
+                    ownership,
                 )
+
             return
 
-        sell_qty=min(qty,broker_qty)
-
-        if sell_qty <= 0:
-            return
-
-        self._log(
-            symbol,
-            episode,
-            "EXIT_CLAIMED",
-            reason,
-            {
-                "price":px,
-                "episode_qty":qty,
-                "broker_qty":broker_qty,
-                "sell_qty":sell_qty,
-            },
+        st=self._reconcile_exit_state(
+            row,
+            broker_qty=broker_qty,
         )
 
-        try:
-            order=self.order_submitter(
-                symbol=symbol, side="SELL", quantity=sell_qty,
-                order_type="MARKET", confirmation=PAPER_CONFIRMATION,
-                client_order_id=f"baby-v1515-exit-{symbol.lower()}-{episode}"
+        if not st:
+            return
+
+        state=str(st.get("state") or "TRACKING")
+
+        # Never place another SELL while broker outcome of an existing
+        # exit order is unresolved.
+        if state in {
+            "T1_PARTIAL_CLAIMED",
+            "T1_PARTIAL_SUBMIT_UNKNOWN",
+            "T1_PARTIAL_SUBMITTED",
+            "T1_PARTIAL_FILLING",
+            "FINAL_EXIT_CLAIMED",
+            "FINAL_EXIT_SUBMIT_UNKNOWN",
+            "FINAL_EXIT_SUBMITTED",
+            "FINAL_EXIT_FILLING",
+        }:
+            return
+
+        if state in {
+            "CLOSED",
+            "CLOSED_BROKER_ZERO",
+        }:
+            return
+
+        r_now=(px-fill)/risk
+
+        highest_r=max(
+            _f(st.get("highest_r")) or 0.0,
+            r_now,
+        )
+
+        protected_stop=_f(st.get("protected_stop"))
+
+        new_state=state
+
+        # --------------------------------------------------
+        # +0.75R: protection is armed.
+        # --------------------------------------------------
+        if (
+            highest_r>=self.exit_protect_arm_r
+            and new_state=="TRACKING"
+        ):
+            new_state="PROTECTION_ARMED"
+
+        # --------------------------------------------------
+        # +1R: original full -1R loss is no longer allowed.
+        #
+        # Default protected stop = -0.05R from entry.
+        # This leaves a small amount of execution noise.
+        # --------------------------------------------------
+        if highest_r>=self.exit_protect_r:
+            candidate=(
+                fill
+                + self.exit_protected_stop_r*risk
             )
-        except Exception as exc:
-            self._log(symbol,episode,"EXIT_SUBMIT_UNKNOWN","BROKER_EXCEPTION",{"error":str(exc)})
+
+            if protected_stop is None:
+                protected_stop=candidate
+            else:
+                protected_stop=max(
+                    protected_stop,
+                    candidate,
+                )
+
+            if new_state in {
+                "TRACKING",
+                "PROTECTION_ARMED",
+            }:
+                new_state="PROTECTED"
+
+        t1_filled=_f(st.get("t1_filled_qty")) or 0.0
+
+        # Once T1 partial profit has actually filled, protect some
+        # positive R on the remainder.
+        if t1_filled>0:
+            post_t1_stop=(
+                fill
+                + self.exit_post_t1_stop_r*risk
+            )
+
+            if protected_stop is None:
+                protected_stop=post_t1_stop
+            else:
+                protected_stop=max(
+                    protected_stop,
+                    post_t1_stop,
+                )
+
+            if new_state not in {
+                "FINAL_EXIT_FAILED",
+                "T1_PARTIAL_FAILED",
+            }:
+                new_state="T1_PARTIAL_FILLED"
+
+        with self._db() as db:
+            db.execute("""
+                UPDATE v1518_exit_state
+                SET highest_r=?,
+                    protected_stop=?,
+                    remaining_quantity=?,
+                    last_broker_qty=?,
+                    state=?,
+                    updated_at=?
+                WHERE symbol=?
+                  AND ready_episode=?
+            """,(
+                highest_r,
+                protected_stop,
+                broker_qty,
+                broker_qty,
+                new_state,
+                _now(),
+                symbol,
+                episode,
+            ))
+            db.commit()
+
+        st=self._exit_state(symbol,episode)
+
+        # ==================================================
+        # EXIT PRIORITY
+        #
+        # 1. Original invalidation
+        # 2. Protected stop
+        # 3. T2
+        # 4. T1 partial
+        # ==================================================
+
+        if px<=stop:
+            self._submit_exit_v2(
+                row,
+                broker_qty,
+                "ORIGINAL_INVALIDATION",
+                "FINAL",
+            )
             return
 
-        oid=order.get("id") or order.get("order_id")
-        if not oid:
-            self._log(symbol,episode,"EXIT_SUBMIT_UNKNOWN","BROKER_NO_ORDER_ID",order)
+        if (
+            protected_stop is not None
+            and px<=protected_stop
+        ):
+            self._submit_exit_v2(
+                row,
+                broker_qty,
+                "PROTECTED_STOP",
+                "FINAL",
+            )
             return
 
-        self._log(symbol,episode,"EXIT_SUBMITTED",reason,order)
-        self._notify(
-            f"BABY — {symbol} PAPER exit submitted",
-            f"SELL {sell_qty:g} shares submitted to Alpaca PAPER. Reason: {reason}. "
-            f"Quote ${px:.2f}. Real-money execution DISABLED.",
-            symbol,
-            episode
-        )
+        if t2 is not None and px>=t2:
+            self._submit_exit_v2(
+                row,
+                broker_qty,
+                "T2_TARGET",
+                "FINAL",
+            )
+            return
+
+        # Partial T1 only if we have never submitted it.
+        if (
+            t1 is not None
+            and px>=t1
+            and not st.get("t1_order_id")
+            and (_f(st.get("t1_filled_qty")) or 0)<=0
+        ):
+            raw_partial=(
+                broker_qty
+                * self.exit_t1_fraction
+            )
+
+            # Preserve whole-share behavior for whole-share positions.
+            if abs(broker_qty-round(broker_qty))<1e-9:
+                partial_qty=float(
+                    max(
+                        1,
+                        int(raw_partial),
+                    )
+                )
+            else:
+                partial_qty=round(
+                    raw_partial,
+                    6,
+                )
+
+            partial_qty=min(
+                partial_qty,
+                broker_qty,
+            )
+
+            if partial_qty>0:
+                self._submit_exit_v2(
+                    row,
+                    partial_qty,
+                    "T1_PARTIAL",
+                    "T1",
+                )
 
     def _loop(self):
         while not self.stop_event.is_set():

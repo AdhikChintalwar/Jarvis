@@ -787,6 +787,7 @@ try:
         order_submitter=alpaca_broker.submit_confirmed_order,
         ledger=v1511_ledger,
         position_getter=alpaca_broker.positions,
+        order_getter=alpaca_broker.orders,
         research_getter=lambda sym: json.loads(
             (REPORT_DIR / f"{sym.upper()}.json").read_text()
         ),
