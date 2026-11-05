@@ -787,6 +787,9 @@ try:
         order_submitter=alpaca_broker.submit_confirmed_order,
         ledger=v1511_ledger,
         position_getter=alpaca_broker.positions,
+        research_getter=lambda sym: json.loads(
+            (REPORT_DIR / f"{sym.upper()}.json").read_text()
+        ),
         notifier=notifier,
         interval_seconds=int(os.getenv('BABY_PAPER_AUTOPILOT_INTERVAL_SECONDS','5')),
     )
