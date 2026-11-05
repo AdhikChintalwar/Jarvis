@@ -11,10 +11,91 @@ function SetupTable({rows=[]}){return <div className="reportTableWrap"><table cl
 function PaperTable({rows=[]}){return <div className="reportTableWrap"><table className="reportTable"><thead><tr><th>Symbol</th><th>Episode</th><th>Order</th><th>Qty</th><th>Fill time</th><th>Fill</th><th>T1 hit</th><th>T2 hit</th><th>Invalidation hit</th><th>Status</th><th>MFE</th><th>MAE</th></tr></thead><tbody>{rows.map((r,i)=><tr key={`${r.paper_order_id}-${i}`}><td><b>{r.symbol}</b></td><td>{r.ready_episode}</td><td>{val(r.paper_order_id)}</td><td>{val(r.paper_quantity)}</td><td>{val(r.paper_fill_at)}</td><td>{money(r.paper_fill_price)}</td><td>{val(r.paper_t1_hit_at)}</td><td>{val(r.paper_t2_hit_at)}</td><td>{val(r.paper_invalidation_hit_at)}</td><td><Pill>{r.paper_status}</Pill></td><td>{pct(r.paper_mfe_pct)}</td><td>{pct(r.paper_mae_pct)}</td></tr>)}</tbody></table></div>}
 
 export default function Reports(){
- const[days,setDays]=useState(30),[data,setData]=useState(null),[err,setErr]=useState(''),[tab,setTab]=useState('overview'),[loading,setLoading]=useState(false);
- const load=async()=>{setLoading(true);setErr('');try{const r=await fetch(`/api/v1512/reports?days=${days}`);if(!r.ok)throw new Error(await r.text());setData(await r.json())}catch(e){setErr(String(e))}finally{setLoading(false)}};
+ const[days,setDays]=useState(30),[data,setData]=useState(null),[v19,setV19]=useState(null),[err,setErr]=useState(''),[tab,setTab]=useState('overview'),[loading,setLoading]=useState(false);
+
+ const load=async()=>{
+  setLoading(true);
+  setErr('');
+
+  try{
+   const [baseRes,v19OverviewRes,v19TradesRes]=await Promise.all([
+    fetch(`/api/v1512/reports?days=${days}`),
+    fetch(`/api/v1519/overview?days=${days}`),
+    fetch(`/api/v1519/trades?days=${days}`)
+   ]);
+
+   if(!baseRes.ok)throw new Error(await baseRes.text());
+
+   const base=await baseRes.json();
+
+   let overview=null;
+   let trades=null;
+
+   if(v19OverviewRes.ok){
+    overview=await v19OverviewRes.json();
+   }
+
+   if(v19TradesRes.ok){
+    trades=await v19TradesRes.json();
+   }
+
+   setData(base);
+
+   setV19({
+    overview,
+    trades:trades?.trades||[]
+   });
+
+  }catch(e){
+   setErr(String(e));
+  }finally{
+   setLoading(false);
+  }
+ };
  useEffect(()=>{load()},[days]);
  const s=data?.summary||{};
+
+ const paperRows=data?.paper_trades||[];
+
+ const tradedT1=paperRows.filter(r=>
+  ['PARTIAL_SUCCESS','SUCCESS','T1_THEN_STOP']
+   .includes(String(r.paper_status||'').toUpperCase())
+ ).length;
+
+ const tradedT2=paperRows.filter(r=>
+  String(r.paper_status||'').toUpperCase()==='SUCCESS'
+ ).length;
+
+ const tradedLosses=paperRows.filter(r=>
+  String(r.paper_status||'').toUpperCase()==='FAILED'
+ ).length;
+
+ const tradedOpen=paperRows.filter(r=>
+  ['IN_PROGRESS','ORDER_UNFILLED']
+   .includes(String(r.paper_status||'').toUpperCase())
+ ).length;
+
+ const tradedResolved=tradedT1+tradedLosses;
+
+ const tradedT1Rate=tradedResolved
+  ?100*tradedT1/tradedResolved
+  :null;
+
+ const tradedLossRate=tradedResolved
+  ?100*tradedLosses/tradedResolved
+  :null;
+
+ const v19Groups=v19?.overview?.by_strategy_version||{};
+
+ const v2Perf=
+  v19Groups['ENTRY_V2+EXIT_V2']
+  ||v19Groups['ENTRY_V2']
+  ||{};
+
+ const v2Rows=(v19?.trades||[]).filter(r=>
+  r.strategy_version!=='LEGACY'
+ );
+
  const tabs=[['overview','Overview'],['daily','Daily'],['baby','Baby Performance'],['paper','My PAPER Trades'],['open','Open Setups'],['blockers','Blockers'],['types','Setup Types'],['health','Alert Health']];
  return <main className="screenPage reportsPage">
   <section className="pageExplain compactExplain"><div><span className="pageKicker">REPORTS</span><h1>Baby performance and daily activity</h1><p>Measure Baby's SETUP_READY suggestions independently from the Alpaca PAPER trades you actually approve. Milestone dates are shown in Eastern Time.</p></div><div className="reportActions"><select value={days} onChange={e=>setDays(Number(e.target.value))}><option value={1}>Today</option><option value={7}>7 days</option><option value={30}>30 days</option><option value={90}>90 days</option><option value={3650}>All</option></select><button className="primaryButton" onClick={()=>window.location.href=`/api/v1512/reports/pdf?days=${days}`}>Download PDF</button><button className="secondaryButton" onClick={load}>Refresh</button></div></section>
@@ -25,7 +106,198 @@ export default function Reports(){
   {tab==='overview'&&<div className="reportGrid"><section className="reportPanel"><h2>Historical coverage</h2><div className="reportStatusGrid"><div><span>Observations</span><b>{s.historical_observations??0}</b></div><div><span>Symbols monitored</span><b>{s.symbols_monitored??0}</b></div><div><span>First observation</span><b>{val(s.history_first_seen)}</b></div><div><span>Latest observation</span><b>{val(s.history_last_seen)}</b></div></div><p className="reportNote">{s.historical_backfill_observations??0} observations were conservatively reconstructed from persisted pre-V15.12 monitoring history. They remain monitoring records only and are not counted as SETUP_READY performance.</p></section><section className="reportPanel"><h2>Current performance</h2><div className="reportStatusGrid"><div><span>Waiting for entry</span><b>{s.waiting_for_entry??0}</b></div><div><span>Open / unresolved</span><b>{s.open_setups??0}</b></div><div><span>T1 hits</span><b>{s.t1_hits??0}</b></div><div><span>T2 hits</span><b>{s.t2_hits??0}</b></div></div></section><section className="reportPanel"><h2>Latest daily activity</h2>{!data.daily?.length?<Empty/>:<>{data.daily.slice(0,5).map(r=><div className="dailyMini" key={r.date}><b>{r.date}</b><span>{r.symbols_observed} observed · {r.monitor} monitor · {r.setup_forming} forming · {r.active_setup} active · {r.near_ready} near-ready · {r.setup_ready_episodes} ready episodes</span></div>)}</>}</section><section className="reportPanel reportWide"><h2>Latest Baby SETUP_READY episodes</h2>{!data.baby_performance?.length?<Empty>No SETUP_READY episodes in this window.</Empty>:<SetupTable rows={data.baby_performance.slice(0,12)}/>}</section></div>}
   {tab==='daily'&&<section className="reportPanel"><h2>Daily activity report</h2>{!data.daily?.length?<Empty/>:<div className="reportTableWrap"><table className="reportTable"><thead><tr><th>Date</th><th>Observed</th><th>Monitor</th><th>Setup forming</th><th>Active</th><th>Near ready</th><th>SETUP_READY episodes</th><th>Approvals</th><th>PAPER orders</th><th>Fills</th><th>Emails sent</th><th>Email failures</th></tr></thead><tbody>{data.daily.map(r=><tr key={r.date}><td><b>{r.date}</b></td><td>{r.symbols_observed}</td><td>{r.monitor}</td><td>{r.setup_forming}</td><td>{r.active_setup}</td><td>{r.near_ready}</td><td>{r.setup_ready_episodes}</td><td>{r.approvals_created}</td><td>{r.paper_orders_submitted}</td><td>{r.paper_fills}</td><td>{r.emails_sent}</td><td>{r.email_failures}</td></tr>)}</tbody></table></div>}</section>}
   {tab==='baby'&&<section className="reportPanel"><h2>Baby recommendation performance</h2><p className="reportNote">This evaluates Baby itself. A setup is tracked even if you never approved a PAPER trade.</p>{!data.baby_performance?.length?<Empty/>:<SetupTable rows={data.baby_performance}/>}</section>}
-  {tab==='paper'&&<section className="reportPanel"><h2>My Alpaca PAPER trades</h2><p className="reportNote">This report starts at the actual broker fill, not the theoretical entry.</p>{!data.paper_trades?.length?<Empty>No approved Alpaca PAPER trades in this window.</Empty>:<PaperTable rows={data.paper_trades}/>}</section>}
+  {tab==='paper'&&<div className="reportGrid">
+
+   <section className="reportPanel reportWide">
+    <h2>PAPER Traded Performance</h2>
+    <p className="reportNote">
+     Counts only setups that received an actual Alpaca PAPER fill.
+     Legacy T1/T2/stop results are price-path outcomes after the fill.
+    </p>
+
+    <div className="reportCards">
+     <Card
+      label="FILLED PAPER TRADES"
+      value={paperRows.length}
+      sub="actual broker fills"
+     />
+
+     <Card
+      label="TRADED T1 HITS"
+      value={tradedT1}
+      sub={tradedResolved?`${tradedT1Rate.toFixed(1)}% of resolved trades`:'no resolved trades'}
+     />
+
+     <Card
+      label="TRADED T2 HITS"
+      value={tradedT2}
+      sub="price reached T2"
+     />
+
+     <Card
+      label="TRADED LOSSES"
+      value={tradedLosses}
+      sub={tradedResolved?`${tradedLossRate.toFixed(1)}% of resolved trades`:'no resolved trades'}
+     />
+
+     <Card
+      label="STILL OPEN"
+      value={tradedOpen}
+      sub="not counted as wins/losses"
+     />
+
+     <Card
+      label="RESOLVED"
+      value={tradedResolved}
+      sub={`${paperRows.length} total filled`}
+     />
+    </div>
+   </section>
+
+
+   <section className="reportPanel reportWide">
+    <h2>Entry V2 + Exit V2 — Broker Executed Results</h2>
+
+    <p className="reportNote">
+     New V2 trades use actual Exit V2 broker fills for realized
+     P&amp;L and R. Legacy price-path results are not treated as
+     realized broker exits.
+    </p>
+
+    <div className="reportCards">
+
+     <Card
+      label="V2 TRADES"
+      value={v2Perf.trades??0}
+      sub={`${v2Perf.resolved??0} resolved`}
+     />
+
+     <Card
+      label="V2 WINS"
+      value={v2Perf.wins??0}
+      sub={v2Perf.win_rate_pct==null?'waiting for trades':`${Number(v2Perf.win_rate_pct).toFixed(1)}% win rate`}
+     />
+
+     <Card
+      label="V2 LOSSES"
+      value={v2Perf.losses??0}
+      sub="broker-executed"
+     />
+
+     <Card
+      label="REALIZED P&L"
+      value={v2Perf.total_realized_pnl==null?'--':money(v2Perf.total_realized_pnl)}
+      sub="actual Exit V2 fills"
+     />
+
+     <Card
+      label="EXPECTANCY"
+      value={v2Perf.expectancy_r==null?'--':`${Number(v2Perf.expectancy_r).toFixed(2)}R`}
+      sub="average realized R"
+     />
+
+     <Card
+      label="PROFIT FACTOR"
+      value={v2Perf.profit_factor==null?'--':Number(v2Perf.profit_factor).toFixed(2)}
+      sub="gross wins ÷ gross losses"
+     />
+
+    </div>
+
+    <div className="reportStatusGrid">
+
+     <div>
+      <span>T1 partial fills</span>
+      <b>{v2Perf.t1_partial_filled??0}</b>
+     </div>
+
+     <div>
+      <span>T2 exits</span>
+      <b>{v2Perf.t2_exits??0}</b>
+     </div>
+
+     <div>
+      <span>Protected-stop exits</span>
+      <b>{v2Perf.protected_exits??0}</b>
+     </div>
+
+     <div>
+      <span>Original-stop exits</span>
+      <b>{v2Perf.original_stop_exits??0}</b>
+     </div>
+
+    </div>
+   </section>
+
+
+   <section className="reportPanel reportWide">
+    <h2>V2 Trade Details</h2>
+
+    {!v2Rows.length
+     ?<Empty>No Entry V2 PAPER trades have filled yet.</Empty>
+     :<div className="reportTableWrap">
+       <table className="reportTable">
+        <thead>
+         <tr>
+          <th>Symbol</th>
+          <th>Episode</th>
+          <th>Strategy</th>
+          <th>Entry score</th>
+          <th>Fill</th>
+          <th>Stop</th>
+          <th>T1</th>
+          <th>T2</th>
+          <th>Highest R</th>
+          <th>T1 qty</th>
+          <th>T1 fill</th>
+          <th>Final reason</th>
+          <th>Final fill</th>
+          <th>P&amp;L</th>
+          <th>Realized R</th>
+         </tr>
+        </thead>
+
+        <tbody>
+         {v2Rows.map((r,i)=>
+          <tr key={`${r.symbol}-${r.ready_episode}-${i}`}>
+           <td><b>{r.symbol}</b></td>
+           <td>{r.ready_episode}</td>
+           <td><Pill>{r.strategy_version}</Pill></td>
+           <td>{r.entry_quality_score==null?'--':Number(r.entry_quality_score).toFixed(1)}</td>
+           <td>{money(r.fill_price)}</td>
+           <td>{money(r.initial_stop)}</td>
+           <td>{money(r.target1)}</td>
+           <td>{money(r.target2)}</td>
+           <td>{r.highest_r==null?'--':`${Number(r.highest_r).toFixed(2)}R`}</td>
+           <td>{val(r.t1_filled_qty)}</td>
+           <td>{money(r.t1_fill_price)}</td>
+           <td>{val(r.final_reason)}</td>
+           <td>{money(r.final_fill_price)}</td>
+           <td>{r.realized_pnl==null?'--':money(r.realized_pnl)}</td>
+           <td>{r.realized_r==null?'--':`${Number(r.realized_r).toFixed(2)}R`}</td>
+          </tr>
+         )}
+        </tbody>
+       </table>
+      </div>
+    }
+   </section>
+
+
+   <section className="reportPanel reportWide">
+    <h2>All Filled PAPER Trades</h2>
+
+    <p className="reportNote">
+     Historical PAPER trades remain visible below.
+    </p>
+
+    {!paperRows.length
+     ?<Empty>No approved Alpaca PAPER trades in this window.</Empty>
+     :<PaperTable rows={paperRows}/>
+    }
+   </section>
+
+  </div>}
   {tab==='open'&&<section className="reportPanel"><h2>Open / unresolved Baby setups</h2>{!data.open_setups?.length?<Empty>No unresolved SETUP_READY episodes.</Empty>:<SetupTable rows={data.open_setups}/>}</section>}
   {tab==='blockers'&&<section className="reportPanel"><h2>Why candidates did not become PAPER ready</h2>{!data.blockers?.length?<Empty/>:<div className="reportTableWrap"><table className="reportTable"><thead><tr><th>Blocker</th><th>Unique symbol-day count</th><th>Examples</th></tr></thead><tbody>{data.blockers.map(r=><tr key={r.blocker}><td><b>{r.blocker}</b></td><td>{r.count}</td><td>{r.symbols?.join(', ')||'--'}</td></tr>)}</tbody></table></div>}</section>}
   {tab==='types'&&<section className="reportPanel"><h2>Performance by setup type</h2>{!data.setup_types?.length?<Empty/>:<div className="reportTableWrap"><table className="reportTable"><thead><tr><th>Setup type</th><th>Ready</th><th>Entered</th><th>Entry rate</th><th>T1 hits</th><th>T1 rate</th><th>T2 hits</th><th>T2 rate</th><th>Failed before T1</th><th>Stop rate</th><th>Open</th></tr></thead><tbody>{data.setup_types.map(r=><tr key={r.setup_type}><td><b>{r.setup_type}</b></td><td>{r.ready_episodes}</td><td>{r.entered}</td><td>{pct(r.entry_rate_pct)}</td><td>{r.t1_hits}</td><td>{pct(r.t1_rate_pct)}</td><td>{r.t2_hits}</td><td>{pct(r.t2_rate_pct)}</td><td>{r.failed_before_t1}</td><td>{pct(r.stop_before_t1_rate_pct)}</td><td>{r.open}</td></tr>)}</tbody></table></div>}</section>}
