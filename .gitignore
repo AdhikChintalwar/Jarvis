@@ -70,3 +70,31 @@ apply_v*.py
 verify_v*.py
 *.py[cod]
 *.save
+
+# Dependencies
+node_modules/
+
+# Old full-tree version snapshots
+/v87/
+/v9work/
+/v91work/
+/v911work/
+/v10work/
+/v1001work/
+/v1002work/
+/v1003work/
+/v106build/
+
+# One-off version scripts dumped at the repo root
+/investor_v*.py
+/primary_financial*.py
+/v8_*.py
+/v9_*.py
+/v10_*.py
+/v11_*.py
+
+# Local version backups and install payloads
+.baby_v*/
+payload/
+*.pre_*
+*.pre_history_summary
